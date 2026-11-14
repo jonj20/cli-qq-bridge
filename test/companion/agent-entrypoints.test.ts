@@ -47,6 +47,13 @@ describe("agent CLI entrypoints", () => {
     };
 
     expect(Object.keys(packageJson.bin ?? {}).sort()).toEqual([
+      "qq-check-update",
+      "qq-claude",
+      "qq-codex",
+      "qq-daemon",
+      "qq-opencode",
+      "qq-pi",
+      "qq-setup",
       "telegram-check-update",
       "telegram-claude",
       "telegram-codex",

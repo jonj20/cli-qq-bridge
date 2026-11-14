@@ -29,11 +29,11 @@ describe("release package metadata", () => {
   });
 
   test("smokes every channel launcher while excluding network and pairing commands", () => {
-    const expected = ["wechat", "wecom", "telegram"].flatMap((channel) =>
+    const expected = ["wechat", "wecom", "telegram", "qq"].flatMap((channel) =>
       ["codex", "claude", "opencode", "pi", "daemon"].map((adapter) => `${channel}-${adapter}`),
     ).sort();
     expect(getSmokeCommands({ ...packageJson.bin, "unknown-command": "bin/unknown.mjs" })).toEqual(expected);
-    expect(expected).toHaveLength(15);
+    expect(expected).toHaveLength(20);
   });
 
   test("publishes the scoped compatibility mirror and the upcoming cli-chat-bridge name", () => {

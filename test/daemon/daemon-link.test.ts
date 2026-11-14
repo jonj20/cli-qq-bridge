@@ -60,7 +60,7 @@ describe("daemon-link normalizeDaemonEndpoint", () => {
   };
 
   test("keeps every known channel id", () => {
-    for (const channelId of ["wechat", "wecom", "telegram", "local"]) {
+    for (const channelId of ["wechat", "wecom", "telegram", "qq", "local"]) {
       expect(normalizeDaemonEndpoint({ ...base, channelId })?.channelId).toBe(channelId);
     }
   });

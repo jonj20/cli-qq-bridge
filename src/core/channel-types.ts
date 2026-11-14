@@ -10,6 +10,7 @@ export const BRIDGE_CHANNEL_DISPLAY_NAMES = {
   wechat: "WeChat",
   wecom: "WeCom",
   telegram: "Telegram",
+  qq: "QQ",
   local: "Local",
 } as const;
 

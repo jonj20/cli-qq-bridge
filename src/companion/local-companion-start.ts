@@ -17,6 +17,7 @@ import {
 import { ensureWechatCredentials } from "../wechat/setup.ts";
 import { ensureWecomAccount } from "../channels/wecom/setup.ts";
 import { ensureTelegramAccount } from "../channels/telegram/setup.ts";
+import { ensureQqAccount } from "../channels/qq/setup.ts";
 import {
   getBridgeChannelDisplayName,
   isBridgeChannelId,
@@ -431,6 +432,11 @@ const channelCredentialSetups = {
   },
   telegram: async (options) => {
     await ensureTelegramAccount({
+      log: (message) => log(options, message),
+    });
+  },
+  qq: async (options) => {
+    await ensureQqAccount({
       log: (message) => log(options, message),
     });
   },

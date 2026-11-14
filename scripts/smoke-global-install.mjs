@@ -142,8 +142,8 @@ function printHelp() {
 
 function isSafeSmokeCommand(commandName) {
   return (
-    /^(?:wechat|wecom|telegram)-daemon$/.test(commandName) ||
-    /^(?:wechat|wecom|telegram)-(?:codex|claude|opencode|pi)$/.test(commandName)
+    /^(?:wechat|wecom|telegram|qq)-daemon$/.test(commandName) ||
+    /^(?:wechat|wecom|telegram|qq)-(?:codex|claude|opencode|pi)$/.test(commandName)
   );
 }
 

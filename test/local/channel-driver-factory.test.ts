@@ -13,11 +13,13 @@ import { describe, expect, test } from "bun:test";
 import { createChannelDriver } from "../../src/channels/channel-driver-factory.ts";
 import type { WeChatTransport } from "../../src/wechat/wechat-transport.ts";
 import type { WecomTransport } from "../../src/channels/wecom/wecom-transport.ts";
+import type { QqTransport } from "../../src/channels/qq/qq-transport.ts";
 
 const noop = () => {};
 
 const fakeWechatTransport = { stop: noop } as unknown as WeChatTransport;
 const fakeWecomTransport = { stop: noop } as unknown as WecomTransport;
+const fakeQqTransport = { stop: noop } as unknown as QqTransport;
 
 describe("createChannelDriver", () => {
   test("builds the local loopback driver from explicit file paths", () => {
@@ -105,5 +107,31 @@ describe("createChannelDriver", () => {
         logError: noop,
       }).id,
     ).toBe("wecom");
+
+    expect(() =>
+      createChannelDriver({
+        channelId: "qq",
+        authorizedUserId: "u",
+        wechatTransport: null,
+        wecomTransport: null,
+        qqTransport: null,
+        buildAttachmentInboundPrompt: (text) => text,
+        log: noop,
+        logError: noop,
+      }),
+    ).toThrow("QQ channel requires a QQ transport");
+
+    expect(
+      createChannelDriver({
+        channelId: "qq",
+        authorizedUserId: "u",
+        wechatTransport: null,
+        wecomTransport: null,
+        qqTransport: fakeQqTransport,
+        buildAttachmentInboundPrompt: (text) => text,
+        log: noop,
+        logError: noop,
+      }).id,
+    ).toBe("qq");
   });
 });

@@ -206,6 +206,21 @@ telegram-setup --check  # Check the configured Bot Token
 
 Run only one bridge or daemon per Bot Token at a time. Before pairing again with `telegram-setup`, stop any bridge already using that bot.
 
+#### 3.4 QQ setup
+
+QQ uses the official QQ Bot WebSocket gateway and C2C/Group OpenAPI, requiring no public callback URL. Your computer must be able to reach `q.qq.com`, `bots.qq.com`, and `api.sgroup.qq.com`.
+
+1. Run `qq-setup` in your local terminal (default QR scan binding) or `qq-setup --manual` (manual AppID and AppSecret created on [QQ Open Platform](https://q.qq.com)).
+2. In QR mode, scan the terminal QR code with mobile QQ and confirm in the QQ bot assistant. If the portal does not return `user_openid` (or in `--manual` mode), send `/pair <six-digit-code>` from your QQ account to the bot within 5 minutes to bind the operator.
+3. Credentials and operator OpenID are saved in `~/.cli-bridge/qq/account.json`, and inbound attachments are saved under `~/.cli-bridge/qq/inbound-attachments/`.
+4. Enter your project directory and run `qq-daemon --adapter codex`, or choose a `qq-*` direct launcher from the table below.
+
+```bash
+qq-setup          # Bind a QQ bot via QR code and pair the operator
+qq-setup --manual # Enter AppID/AppSecret manually and pair via /pair <code>
+qq-setup --check  # Check saved QQ credentials
+```
+
 ### 4. Send a sync message from WeChat first (WeChat only)
 
 After starting the bridge, send a message to the bot in WeChat, such as `hello`, a task, or any short text. This gives the bridge a fresh WeChat `context_token` so local terminal input, final replies, and approvals can be sent back reliably.
@@ -222,12 +237,12 @@ cd D:\work\your-project
 
 Choose a launcher:
 
-| Local CLI | WeChat command | WeCom command | Telegram command |
-| --- | --- | --- | --- |
-| Codex | `wechat-codex` | `wecom-codex` | `telegram-codex` |
-| Claude Code | `wechat-claude` | `wecom-claude` | `telegram-claude` |
-| OpenCode | `wechat-opencode` | `wecom-opencode` | `telegram-opencode` |
-| Pi | `wechat-pi` | `wecom-pi` | `telegram-pi` |
+| Local CLI | WeChat command | WeCom command | Telegram command | QQ command |
+| --- | --- | --- | --- | --- |
+| Codex | `wechat-codex` | `wecom-codex` | `telegram-codex` | `qq-codex` |
+| Claude Code | `wechat-claude` | `wecom-claude` | `telegram-claude` | `qq-claude` |
+| OpenCode | `wechat-opencode` | `wecom-opencode` | `telegram-opencode` | `qq-opencode` |
+| Pi | `wechat-pi` | `wecom-pi` | `telegram-pi` | `qq-pi` |
 
 
 A direct launcher runs the CLI in the current terminal and connects it to the bridge:

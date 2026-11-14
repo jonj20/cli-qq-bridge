@@ -206,6 +206,21 @@ telegram-setup --check  # 检查已配置的 Bot Token 是否有效
 
 同一个 Bot Token 同时只运行一个 bridge／daemon；重新运行 `telegram-setup` 配对前，先停止正在使用这个机器人的桥接进程。
 
+#### 3.4 QQ 接入
+
+QQ 使用官方 [QQ 机器人 WebSocket 网关与 C2C/群聊 OpenAPI](https://api.sgroup.qq.com)，不需要公网回调地址，本机需能访问 `q.qq.com`、`bots.qq.com` 与 `api.sgroup.qq.com`。
+
+1. 在本地终端运行 `qq-setup`（默认扫码绑定）或 `qq-setup --manual`（手动输入在 [QQ 开放平台](https://q.qq.com) 创建的 AppID 与 AppSecret）；
+2. 扫码模式下使用手机 QQ 扫描终端二维码并在 QQ 机器人助手中确认；若门户未返回扫码人 OpenID，或在 `--manual` 模式下，在 QQ 中向机器人发送终端显示的 `/pair <六位配对码>` 绑定操作者；
+3. 凭据与操作者身份保存到 `~/.cli-bridge/qq/account.json`，入站附件保存到 `~/.cli-bridge/qq/inbound-attachments/`；
+4. 进入目标项目目录，运行 `qq-daemon --adapter codex`，或选择下表中的 `qq-*` 直接启动命令。
+
+```bash
+qq-setup          # 扫码绑定 QQ 机器人并配对操作者
+qq-setup --manual # 手动输入 AppID/AppSecret 并通过 /pair <code> 配对
+qq-setup --check  # 检查已保存的 QQ 凭据是否有效
+```
+
 ### 4. 先从微信发一条同步消息（仅微信）
 
 启动 bridge 后，建议先在微信里向 Bot 发送一条消息，例如 `hello`、你要执行的任务，或任意一句话。这样 bridge 能拿到最新的微信会话 `context_token`，之后本地终端中的输入、最终回复和审批提示才能稳定同步回微信。
@@ -222,12 +237,12 @@ cd D:\work\your-project
 
 然后选择一个单命令入口：
 
-| 使用的本地 CLI | 微信启动命令 | 企业微信启动命令 | Telegram 启动命令 |
-| --- | --- | --- | --- |
-| Codex | `wechat-codex` | `wecom-codex` | `telegram-codex` |
-| Claude Code | `wechat-claude` | `wecom-claude` | `telegram-claude` |
-| OpenCode | `wechat-opencode` | `wecom-opencode` | `telegram-opencode` |
-| Pi | `wechat-pi` | `wecom-pi` | `telegram-pi` |
+| 使用的本地 CLI | 微信启动命令 | 企业微信启动命令 | Telegram 启动命令 | QQ 启动命令 |
+| --- | --- | --- | --- | --- |
+| Codex | `wechat-codex` | `wecom-codex` | `telegram-codex` | `qq-codex` |
+| Claude Code | `wechat-claude` | `wecom-claude` | `telegram-claude` | `qq-claude` |
+| OpenCode | `wechat-opencode` | `wecom-opencode` | `telegram-opencode` | `qq-opencode` |
+| Pi | `wechat-pi` | `wecom-pi` | `telegram-pi` | `qq-pi` |
 
 
 直接启动命令在当前终端运行 CLI，并把它接入桥接：

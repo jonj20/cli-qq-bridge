@@ -40,6 +40,7 @@ import { resolveDaemonOutboundTarget } from "../core/outbound-target.ts";
 import { isDirectModuleRun } from "../core/direct-run.ts";
 import type { TelegramTransport } from "../channels/telegram/telegram-transport.ts";
 import type { WecomTransport } from "../channels/wecom/wecom-transport.ts";
+import type { QqTransport } from "../channels/qq/qq-transport.ts";
 import type { LocalChannelFiles } from "../channels/local/local-driver.ts";
 import {
   createChannelRuntime,
@@ -199,6 +200,7 @@ export class BridgeDaemon {
         accountId?: string;
         wecomTransport?: WecomTransport | null;
         telegramTransport?: TelegramTransport | null;
+        qqTransport?: QqTransport | null;
         localFiles?: LocalChannelFiles | null;
       }
   )) {
@@ -212,6 +214,7 @@ export class BridgeDaemon {
             wechat: params.transport,
             wecom: params.wecomTransport ?? null,
             telegram: params.telegramTransport ?? null,
+            qq: params.qqTransport ?? null,
             localFiles: params.localFiles ?? null,
           },
         };

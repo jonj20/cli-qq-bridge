@@ -29,6 +29,7 @@
 | `account.json` | 微信凭据 |
 | `wecom/account.json` | 企业微信 Bot 凭据与操作者配对信息 |
 | `telegram/account.json` | Telegram Bot Token、操作者 user ID 与私聊 chat ID |
+| `qq/account.json` | QQ 机器人 AppID、AppSecret、沙箱开关与操作者 OpenID |
 | `sync_buf.txt` | iLink 增量同步游标 |
 | `context_tokens.json` | 微信上下文 token 缓存 |
 | `bridge.log` | bridge、daemon、适配器与各信道发送失败日志 |
@@ -37,6 +38,7 @@
 | `inbound-attachments/<date>/` | 微信入站图片和普通文件的本地保存目录 |
 | `wecom/inbound-attachments/<date>/` | 企业微信入站媒体的本地保存目录 |
 | `telegram/inbound-attachments/` | Telegram 入站图片、文件、视频与音频的本地保存目录 |
+| `qq/inbound-attachments/<date>/` | QQ 入站图片、文件、视频与音频的本地保存目录 |
 | `workspaces/<workspace-key>/bridge-state.json` | 当前工作区状态、会话和 adapter 状态 |
 | `workspaces/<workspace-key>/codex-panel-endpoint.json` | 当前工作区 companion endpoint；文件名保留历史兼容 |
 | `workspaces/<workspace-key>/<adapter>-companion-endpoint.json` | daemon / 多适配器模式下的 companion endpoint |
@@ -51,6 +53,12 @@
 - 如果这个机器人曾配置 webhook，需先通过官方 [`deleteWebhook`](https://core.telegram.org/bots/api#deletewebhook) 移除，再使用本项目的长轮询。
 - 网络异常时确认启动 bridge 的 Node.js 进程能访问 `api.telegram.org`；手机 Telegram 可以连接，不代表本地 Node.js 的代理配置已生效。
 - 没有收到最终回复时，检查 `bridge.log` 的 `final_reply`、`telegram_send_started`、`telegram_send_completed`、`telegram_send_failed` 和 `telegram_forward_failed`。升级前独立 bridge 误走微信端口的错误 `WeChat channel cannot send to telegram` 已在 1.2.3 修复；升级后重启 bridge 或重新 attach，使运行进程加载新代码。
+
+## QQ 配对或消息收发异常
+
+- 运行 `qq-setup --check` 校验已保存的 AppID、AppSecret 与操作者 OpenID，并验证 `bots.qq.com` Token 获取是否正常。
+- 扫码绑定后若未在门户返回扫码人 OpenID，或在 `qq-setup --manual` 模式下，需在 5 分钟内使用操作者 QQ 向机器人发送终端显示的 `/pair <六位配对码>`。
+- 若未收到回复，检查 `bridge.log` 中 `[qq]`、`qq_send_started`、`qq_send_completed`、`qq_send_failed` 以及 WebSocket 心跳与重连记录。
 
 ## `wechat-*` / `wecom-*` / `telegram-*` 提示找不到 bridge
 

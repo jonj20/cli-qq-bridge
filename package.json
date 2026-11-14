@@ -1,7 +1,7 @@
 {
   "name": "cli-wechat-bridge",
   "version": "1.4.1",
-  "description": "CLI bridge for Codex, Claude Code, OpenCode, and Pi over WeChat, WeCom, and Telegram",
+  "description": "CLI bridge for Codex, Claude Code, OpenCode, and Pi over WeChat, WeCom, Telegram, and QQ",
   "type": "module",
   "files": [
     "bin/",
@@ -16,6 +16,7 @@
     "wechat",
     "wecom",
     "telegram",
+    "qq",
     "cli",
     "bridge",
     "codex",
@@ -58,7 +59,14 @@
     "telegram-pi": "bin/telegram-pi.mjs",
     "telegram-daemon": "bin/telegram-daemon.mjs",
     "telegram-setup": "bin/telegram-setup.mjs",
-    "telegram-check-update": "bin/telegram-check-update.mjs"
+    "telegram-check-update": "bin/telegram-check-update.mjs",
+    "qq-codex": "bin/qq-codex.mjs",
+    "qq-claude": "bin/qq-claude.mjs",
+    "qq-opencode": "bin/qq-opencode.mjs",
+    "qq-pi": "bin/qq-pi.mjs",
+    "qq-daemon": "bin/qq-daemon.mjs",
+    "qq-setup": "bin/qq-setup.mjs",
+    "qq-check-update": "bin/qq-check-update.mjs"
   },
   "scripts": {
     "postinstall": "node scripts/ensure-node-pty-permissions.mjs",
@@ -91,7 +99,8 @@
     "test:wechat": "bun test test/wechat",
     "test:wecom": "bun test test/wecom",
     "test:watch": "bun test --watch test",
-    "test:telegram": "bun test test/telegram"
+    "test:telegram": "bun test test/telegram",
+    "test:qq": "bun test test/qq"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.30.0",
@@ -120,7 +129,6 @@
     "@types/node": "^24.12.4",
     "@types/ws": "^8.18.1",
     "eslint": "^10.3.0",
-    "node-gyp": "12.1.0",
     "typescript": "^6.0.2",
     "typescript-eslint": "^8.59.3"
   },

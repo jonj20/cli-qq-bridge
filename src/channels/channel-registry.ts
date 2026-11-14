@@ -26,6 +26,9 @@ import {
 import { ensureTelegramAccount } from "./telegram/setup.ts";
 import { TelegramChannelPort } from "./telegram/telegram-channel-port.ts";
 import { TelegramTransport } from "./telegram/telegram-transport.ts";
+import { resolveQqAccount } from "./qq/qq-config.ts";
+import { QqChannelPort } from "./qq/qq-channel-port.ts";
+import { QqTransport } from "./qq/qq-transport.ts";
 import { WechatChannelPort } from "./wechat/wechat-channel-port.ts";
 import { getPendingChannelMessagesFile } from "../core/pending-message-store.ts";
 import { ensureWecomAccount } from "./wecom/setup.ts";
@@ -36,6 +39,7 @@ export type ChannelTransports = {
   wechat: WeChatTransport | null;
   wecom: WecomTransport | null;
   telegram: TelegramTransport | null;
+  qq: QqTransport | null;
   localFiles: LocalChannelFiles | null;
 };
 
@@ -106,6 +110,7 @@ const NO_TRANSPORTS: ChannelTransports = {
   wechat: null,
   wecom: null,
   telegram: null,
+  qq: null,
   localFiles: null,
 };
 
@@ -220,6 +225,41 @@ const CHANNELS: Record<BridgeChannelId, ChannelDefinition> = {
         onEmptyVisibleReply: hooks.onEmptyVisibleReply,
       }),
   },
+  qq: {
+    setup: async (context) => {
+      const account = resolveQqAccount();
+      if (!account || !account.appId || !account.operatorOpenid) {
+        throw new Error("No complete QQ credentials are configured. Run qq-setup first.");
+      }
+      return {
+        channelId: "qq",
+        operatorId: account.operatorOpenid,
+        accountId: account.appId,
+        transports: {
+          ...NO_TRANSPORTS,
+          qq: new QqTransport({
+            appId: account.appId,
+            appSecret: account.appSecret,
+            sandbox: account.sandbox,
+            allowedUsers: account.allowedUsers,
+            operatorOpenid: account.operatorOpenid,
+            accountId: account.appId,
+            logger: transportLogger(context),
+          }),
+        },
+      };
+    },
+    createPort: (transports, hooks) =>
+      new QqChannelPort({
+        transport: requireTransport(
+          transports.qq,
+          "The QQ channel port requires a QQ transport.",
+        ),
+        sendText: hooks.sendTextToTarget,
+        prefixText: hooks.prefixText,
+        onEmptyVisibleReply: hooks.onEmptyVisibleReply,
+      }),
+  },
   local: {
     setup: async (context) => ({
       channelId: "local",
@@ -277,6 +317,7 @@ export function createChannelRuntime(
     wechatTransport: transports.wechat,
     wecomTransport: transports.wecom,
     telegramTransport: transports.telegram,
+    qqTransport: transports.qq,
     localFiles: transports.localFiles,
     buildAttachmentInboundPrompt: context.buildAttachmentInboundPrompt,
     log: context.log,
@@ -295,6 +336,7 @@ export function createChannelRuntime(
         () => transports.wechat?.stop(),
         () => transports.wecom?.stop(),
         () => transports.telegram?.stop(),
+        () => transports.qq?.stop(),
       ]) {
         try {
           await stop();

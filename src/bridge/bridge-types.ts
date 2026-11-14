@@ -126,7 +126,7 @@ export type BridgeState = {
   transcriptPath?: string;
   pendingUserInput?: PendingUserInputRequest | null;
   lastActivityAt?: string;
-  channelId?: "wechat" | "wecom" | "telegram" | "local";
+  channelId?: "wechat" | "wecom" | "telegram" | "qq" | "local";
 };
 
 export type BridgeAdapterState = {

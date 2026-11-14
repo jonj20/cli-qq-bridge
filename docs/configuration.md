@@ -33,7 +33,7 @@ CLI_BRIDGE_DATA_DIR=/path/to/cli-bridge-data wechat-daemon
 ~/.cli-bridge
 ```
 
-企业微信凭据和附件使用独立子目录：`~/.cli-bridge/wecom/account.json`、`~/.cli-bridge/wecom/inbound-attachments/` 和 `~/.cli-bridge/wecom/inbound-message-claims/`。Telegram 对应使用 `~/.cli-bridge/telegram/account.json`、`~/.cli-bridge/telegram/inbound-attachments/` 和 `~/.cli-bridge/telegram/inbound-message-claims/`。工作区状态、bridge lock、daemon endpoint 与 `bridge.log` 仍由各通道共用，从而保证同一工作区一次只有一个远程通道拥有本地 CLI。
+企业微信凭据和附件使用独立子目录：`~/.cli-bridge/wecom/account.json`、`~/.cli-bridge/wecom/inbound-attachments/` 和 `~/.cli-bridge/wecom/inbound-message-claims/`。Telegram 对应使用 `~/.cli-bridge/telegram/account.json`、`~/.cli-bridge/telegram/inbound-attachments/` 和 `~/.cli-bridge/telegram/inbound-message-claims/`。QQ 对应使用 `~/.cli-bridge/qq/account.json`、`~/.cli-bridge/qq/inbound-attachments/` 和 `~/.cli-bridge/qq/inbound-message-claims/`。工作区状态、bridge lock、daemon endpoint 与 `bridge.log` 仍由各通道共用，从而保证同一工作区一次只有一个远程通道拥有本地 CLI。
 
 可以通过 `CLI_BRIDGE_DATA_DIR` 覆盖。状态文件、日志和旧目录迁移说明见 [问题排查](troubleshooting.md#数据目录与状态文件)。
 
@@ -92,6 +92,11 @@ wechat-daemon
 | `TELEGRAM_OPERATOR_USER_ID` | 覆盖已配对操作者的数字 user ID，用于入站授权；不是 `@username` |
 | `TELEGRAM_OPERATOR_CHAT_ID` | 覆盖操作者的私聊 chat ID，用于默认回复目标 |
 | `TELEGRAM_BOT_USERNAME` | 可选，覆盖机器人用户名 |
+| `QQ_APP_ID` | 覆盖 `qq-setup` 保存的 QQ 机器人 AppID |
+| `QQ_APP_SECRET` | 覆盖 `qq-setup` 保存的 QQ 机器人 AppSecret |
+| `QQ_OPERATOR_OPENID` | 覆盖已配对的 QQ 操作者 OpenID |
+| `QQ_ALLOWED_USERS` | 可选，逗号分隔的额外允许入站消息的 QQ OpenID 列表 |
+| `QQ_SANDBOX` | 设为 `1` / `true` 时使用 QQ 沙箱环境 (`sandbox.api.sgroup.qq.com`) |
 | `WECOM_MAX_INBOUND_IMAGE_MB` | 覆盖企业微信入站图片下载限制，默认 20 MB |
 | `WECOM_MAX_INBOUND_FILE_MB` | 覆盖企业微信入站文件下载限制，默认 50 MB |
 | `WECOM_MAX_INBOUND_VIDEO_MB` | 覆盖企业微信入站视频下载限制，默认 50 MB |

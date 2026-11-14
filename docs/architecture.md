@@ -20,6 +20,7 @@
 | 微信 | iLink HTTPS `getupdates` 长轮询 | iLink HTTPS `sendmessage` | `account.json`、`sync_buf.txt`、`context_tokens.json` | 回复必须携带最近入站消息的 `context_token`；token 失效后需等待新的微信消息刷新 |
 | 企业微信 | 官方智能机器人 WebSocket 长连接 | WebSocket 文本、流式回复和媒体接口 | `wecom/account.json`、工作区状态和通道队列 | 每个 Bot 同时只能保持一个有效连接；当前支持内部单聊和内部群聊 |
 | Telegram | 官方 Bot API `getUpdates` 长轮询 | `sendMessage`、`sendPhoto`、`sendDocument` | `telegram/account.json`、附件与消息 claims | 每个 Bot Token 同时只运行一个轮询端；操作者通过私聊配对 |
+| QQ | 官方 WebSocket 网关 (`wss://api.sgroup.qq.com/websocket`) | C2C / 群聊 REST `/v2/users/{openid}/messages`、`/v2/groups/{group_openid}/messages` 及文件上传接口 | `qq/account.json`、附件与消息 claims | 每个 AppID 同时保持一个 Gateway 连接；支持扫码绑定与 `/pair <code>` 操作者配对 |
 
 同一数据目录下同一时间只运行一个 daemon（不论通道），三种通道的凭据、入站媒体和消息去重目录相互隔离。通道选择在启动入口完成，通道差异集中在 `src/channels/channel-registry.ts` 登记的 driver 与 port 中；daemon 只处理通道无关的会话、审批、输入和输出事件。
 

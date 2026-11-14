@@ -123,6 +123,7 @@ describe("wechat-daemon helpers", () => {
     expect(parseDaemonCliArgs([]).channelId).toBeUndefined();
     expect(parseDaemonCliArgs(["--channel", "wecom"]).channelId).toBe("wecom");
     expect(parseDaemonCliArgs(["--channel", "telegram"]).channelId).toBe("telegram");
+    expect(parseDaemonCliArgs(["--channel", "qq"]).channelId).toBe("qq");
     expect(parseDaemonCliArgs(["--channel", "local"]).channelId).toBe("local");
     let failure = "";
     try {
@@ -783,11 +784,14 @@ describe("wechat-daemon helpers", () => {
     };
     const binSource = readRepoFile("bin/wechat-daemon.mjs");
     const wecomBinSource = readRepoFile("bin/wecom-daemon.mjs");
+    const qqBinSource = readRepoFile("bin/qq-daemon.mjs");
 
     expect(packageJson.bin?.["wechat-daemon"]).toBe("bin/wechat-daemon.mjs");
     expect(packageJson.scripts?.daemon).toContain("src/daemon/wechat-daemon.ts");
     expect(binSource).toContain('runJsEntry("dist/daemon/wechat-daemon.js")');
     expect(packageJson.bin?.["wecom-daemon"]).toBe("bin/wecom-daemon.mjs");
     expect(wecomBinSource).toContain('"--channel", "wecom"');
+    expect(packageJson.bin?.["qq-daemon"]).toBe("bin/qq-daemon.mjs");
+    expect(qqBinSource).toContain('"--channel", "qq"');
   });
 });
