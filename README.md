@@ -1,138 +1,100 @@
-# CLI WeChat Bridge
+# CLI-QQ-Bridge
 
-**CLI WeChat Bridge** lets one WeChat iLink account or one WeChat smart-bot account drive local CLI agents from a normal project directory. It keeps the local CLI as the main working interface while letting you drive it from a remote chat channel (WeChat, WeCom, Telegram, QQ, or local loopback).
+**CLI-QQ-Bridge** 让一个 QQ 账号（QQ iLink / QQ 机器人）驱动本地 CLI 代理，从普通项目目录操作本地 CLI。它把本地 CLI 保持为主要工作界面，同时让你通过 QQ 远程发送任务、接收结果和状态。
 
-Project home: https://github.com/UNLINEARITY/CLI-WeChat-Bridge  
-Package names (identical content): `cli-wechat-bridge` (primary), `@unlinearity/cli-wechat-bridge` (compatibility mirror), `cli-chat-bridge` (upcoming name).  
-License: AGPL-3.0-or-later.
+项目是对这个项目的改进：https://github.com/UNLINEARITY/CLI-WeChat-Bridge  
+---
+
+## 什么是 CLI-QQ-Bridge
+
+CLI-QQ-Bridge 让一个 QQ 账号驱动本地 CLI 代理，围绕本地工作流设计：**本地终端仍然是主工作界面**，QQ 负责远程输入、结果回流与状态同步。
+
+一个 daemon 运行每个桥；没有单独的独立桥运行时。它有两个用户模式：
+- **`qq-daemon`**（居留服务）：首选长连模式。它拥有通道连接，为多个工作区保留 Codex、Claude Code、OpenCode、Pi 插槽，在首个窗口打开前不启动桥接模式。远程打开使用当前窗口的工作区，或在无窗口时使用启动目录（家工作区）。
+- **Direct launchers**（直接启动器）：`qq-codex`、`qq-claude`、`qq-opencode`、`qq-pi` 及其 `wecom-*`/`telegram-*`/`telegram-*` 对照，在当前终端运行 CLI。它们加入已运行的 daemon，或在无 daemon 时启动一个临时 daemon（其插槽随窗口，最后一个窗口关闭后退出）；第二个启动器直接加入。
+
+**渐进式桥接模式**：每个桥接从干净的单桥接开始（L0，无前缀，单 CLI 命令），只随窗口打开逐级上扩。在第一个窗口的工作区，另一个 CLI 类型导致多 CLI 模式（L1，`/codex` 等），同一类型到数字化多实例模式（L2，`/1` `/2` `/open`）；L1 和 L2 从不混合。另一个窗口在任意其他工作区会导致无限制多工作区模式（L3，`/cd`）。
+
+运行数据现在默认位于 `~/.cli-bridge`。遗留数据从 `~/.claude/channels/qq` 和 `CLAUDE_QQ_CHANNEL_DATA_DIR` 仅作为迁移源复制迁移。使用 `CLI_BRIDGE_DATA_DIR` 设置活动数据目录。
 
 ---
 
-## What this project does
+## 支持的 CLI
 
-CLI WeChat Bridge lets one WeChat iLink account or one WeCom smart-bot account drive local CLI agents from a normal project directory. The user-facing npm package is `cli-wechat-bridge`; `@unlinearity/cli-wechat-bridge` is kept as a compatibility mirror for existing users.
-
-One daemon engine (`src/daemon`) runs every bridge; there is no separate standalone bridge runtime. It has two user-facing modes:
-- **`wechat-daemon`** (resident service): the preferred long-lived mode. It owns the channel connection, keeps Codex, Claude Code, OpenCode, and Pi slots for several workspaces, and starts with no bridge mode until the first window opens. Remote opens use the current window's workspace, or the home workspace (the daemon's startup directory) while no window is open.
-- **`wecom-daemon`**: the equivalent long-lived mode for the official WeCom smart-bot WebSocket channel; it uses the same adapter slots and command grammar with WeCom-specific credentials and conversation state.
-- **Direct launchers** (single-bridge mode): `wechat-codex`, `wechat-claude`, `wechat-opencode`, `wechat-pi` and their `wecom-*`/`telegram-*` counterparts run the CLI in the current terminal. They join the channel's running daemon, or start an ephemeral one (`--ephemeral`) whose slots follow their windows and which exits after the last window closes; a second launcher simply joins it.
-
-**Progressive bridge modes** (`src/daemon/bridge-mode.ts`): every bridge starts as a clean single bridge (L0, no prefixes, single-CLI commands only) and only moves up until the daemon exits. In the first window's workspace another CLI type leads to multi-CLI mode (L1, `/codex` etc.), the same type to numbered multi-instance mode (L2, `/1` `/2`, `/open`); L1 and L2 never mix. A window in any other workspace leads to the unrestricted multi-workspace mode (L3, `/cd`).
-
-Runtime data now lives under `~/.cli-bridge` by default. Legacy data is copy-migrated from `~/.claude/channels/wechat` and from `CLAUDE_WECHAT_CHANNEL_DATA_DIR` only as a migration source. Use `CLI_BRIDGE_DATA_DIR` for the active data directory.
+| 适配器 | 状态 | 说明 |
+|--------|------|------|
+| Codex | 已验证 | 验证范围 0.149.x 到 0.161.x |
+| Claude Code | 最新稳定 | 通过能力探针验证，非版本范围 |
+| OpenCode | 最新稳定 | 通过能力探针验证 |
+| Pi | 最新稳定 | Pi 0.85 需要 Node.js >= 22.19.0 |
 
 ---
 
-## Supported CLIs
-
-| Adapter | Status | Notes |
-|---------|--------|-------|
-| Codex | Validated | Codex validated range: 0.149.x through 0.161.x |
-| Claude Code | Latest stable | Validated via capability probes, not version ranges |
-| OpenCode | Latest stable | Validated via capability probes |
-| Pi | Latest stable | Pi 0.85 requires Node.js >= 22.19.0 |
-
----
-
-## Remote control commands (channel-neutral)
-
-| Command | Meaning |
-|---------|---------|
-| `/status` | Bridge/daemon state |
-| `/codex`, `/claude`, `/opencode`, `/pi` | Switch to that CLI; optional prompt after name is forwarded |
-| `/cd` | Switch current workspace (multi-workspace mode L3) |
-| `/cd <number>` / `/cd <name>` | Switch to a numbered or named workspace |
-| `/open` | Open current workspace in current directory |
-| `/1`, `/2` | Switch to numbered instance 1 or 2 (L2 mode) |
-| `/status` | Show daemon and slot status |
-| `/think on` / `/off` | Toggle full thinking/tool_call push |
-| `/confirm` / `/yes` [n] | Approve approval request |
-| `/always` [n] | Auto-approve that request type |
-| `/deny` / `/no` [n] [reason] | Reject approval request |
-| `/abort` [n] | Abort task |
-| `/answer` [text] | Answer pending user-input request |
-| `/model` / `/model <name>` | Switch model |
-| `/plan` [on/off] | Toggle plan mode |
-| `/all <text>` | Broadcast to all active workspaces (L3) |
-| `/resume` [session] | Restore an already-persisted session |
-| `/reset` | Reset current session |
-| `/stop` | Stop the daemon |
-
-See `docs/command-audit.md` for the full command audit.
-
----
-
-## Installation
+## 安装
 
 ```bash
-npm install -g cli-wechat-bridge@latest
+npm install -g cli-qq-bridge@latest
 ```
 
-or use the compatibility mirror / upcoming name:
 
-```bash
-npm install -g @unlinearity/cli-wechat-bridge@latest
-npm install -g cli-chat-bridge@latest
-```
+三个包暴露相同命令；只安装其中一个。切换包名需要先卸载当前包（npm 否则失败并提示 `EEXIST`）。重装提示使用 `getInstalledPackageName()`，因此会命名你实际安装的包。
 
-All three packages expose the same commands; install only one. Switching names requires uninstalling the current package first (npm otherwise fails with `EEXIST`). Reinstall hints name the package you actually installed.
-
-After every code build, install the fresh build to global so the owner always tests the newest code:
+每次代码构建后，立即全局安装最新构建，让所有者始终测试最新代码：
 
 ```bash
 npm install -g .
 ```
 
-When npm blocks the package postinstall script with `allowScripts`, restore the node-pty spawn-helper permission manually:
+当 npm 阻止包 postinstall 脚本时（`allowScripts`），手动恢复 node-pty 生成器权限：
 
 ```bash
-node "$(npm root -g)/cli-wechat-bridge/scripts/ensure-node-pty-permissions.mjs"
+node "$(npm root -g)/cli-qq-bridge/scripts/ensure-node-pty-permissions.mjs"
 ```
 
 ---
 
-## Quick start
+## 快速开始
 
-### 1. Pair your channel
+### 1. 配对 QQ（首选）
 
-**WeChat** (iLink setup):
 ```bash
-wechat-setup
+qq-setup
 ```
 
-**WeCom** (smart-bot WebSocket):
+按照提示完成 QQ 机器人配对。配对完成后，凭据和操作者身份保存到 `~/.cli-bridge/qq/account.json`。
+
+#### 手动配置方式（扫码绑定）
+
+1. 在 [QQ 开放平台](https://q.qq.com) 创建 QQ 机器人，获取 **AppID** 与 **AppSecret**。
+2. 运行 `qq-setup --manual`，输入 AppID 与 AppSecret。
+3. 终端会显示二维码，使用手机 QQ 扫码并在 QQ 机器人助手中确认绑定。
+4. 如果扫码后门户未返回扫码人 OpenID，或在 `--manual` 模式下，终端会显示一个六位配对码。在 QQ 中向机器人发送 `/pair <六位配对码>` 完成绑定。
+5. 配对成功后，凭据与操作者身份保存到 `~/.cli-bridge/qq/account.json`；入站附件保存到 `~/.cli-bridge/qq/inbound-attachments/`。
+
+验证配对是否成功：
+
 ```bash
-wecom-setup
+qq-setup --check
 ```
 
-**Telegram** (Bot API long-poll):
-```bash
-telegram-setup
-```
+---
 
-**Telegram** (Bot API long-poll):
-```bash
-telegram-setup
-```
-
-**Local** (credential-free loopback for tests):
-No credentials needed; uses inbox/transcript files.
-
-### 2. Start in your project directory
+### 2. 在项目目录启动 CLI
 
 ```bash
 cd /path/to/your/workspace
-wechat-codex        # or wechat-claude, wechat-opencode, wechat-pi
+qq-opencode        # 或 qq-claude、qq-opencode、qq-pi
 ```
 
-The first direct launcher starts an ephemeral daemon if none answers. Direct launchers never replace a running daemon: they join it, or start an ephemeral daemon when none answers.
+第一个直接启动器若没有运行中的 daemon 会自动启动一个临时 daemon。直接启动器不会替换运行中的 daemon：它们加入它，或在没有 daemon 回答时启动一个临时 daemon。
 
-Or start the resident daemon first:
+或先启动居民 daemon：
+
 ```bash
-wechat-daemon       # or wecom-daemon, telegram-daemon
+qq-daemon  --adapter opencode  # 或 wecom-daemon、telegram-daemon
 ```
 
-Then in the remote chat channel:
+然后在 QQ 聊天窗口发送：
 
 ```
 /codex
@@ -143,16 +105,46 @@ Then in the remote chat channel:
 
 ---
 
-## Key behaviors
+## QQ 命令
 
-- **Think output**: OpenCode-style thinking fragments are buffered and sent with a `[思考]` / `[Thinking]` prefix. Default mode buffers; `/think on` pushes full text immediately.
-- **Tool calls**: Emitted immediately with tool name and preview args. Tool buffers flush before final replies so output order matches actual event order.
-- **Session following**: Codex 0.155+ persists threads lazily; visible clients start fresh (`new`) by default. Restores available through `--session-start-mode restore`, `/resume`, and reuse of already connected windows.
-- **Daemon switching**: Direct launchers join a running daemon instead of replacing it. Stale daemon endpoints are auto-cleared.
+在 QQ 聊天窗口中，所有以下指令均以 `/` 开头：
+
+| 指令 | 说明 |
+|------|------|
+| `/status` | 查看桥接/daemon 状态 |
+| `/codex [prompt]` | 切换到 Codex；可选 prompt 在切换后转发 |
+| `/claude [prompt]` | 切换到 Claude Code；可选 prompt 在切换后转发 |
+| `/opencode [prompt]` | 切换到 OpenCode；可选 prompt 在切换后转发 |
+| `/pi [prompt]` | 切换到 Pi；可选 prompt 在切换后转发 |
+| `/cd` | 切换当前工作区（L3 多目录模式）|
+| `/cd <编号或目录名>` | 切换到编号或命名的工作区 |
+| `/open` | 在当前目录打开 |
+| `/1`、`/2` | 切换到编号实例 1 或 2（L2 模式）|
+| `/think on` / `/off` | 开关完整思考/工具调用推送 |
+| `/confirm` / `/yes` [n] | 批准工具调用请求 |
+| `/always` [n] | 自动允许该工具调用 |
+| `/deny` / `/no` [n] [理由] | 拒绝工具调用请求 |
+| `/abort` [n] | 中止任务 |
+| `/answer` [文本] | 回答等待的用户输入请求 |
+| `/model` / `/model <名称>` | 切换模型 |
+| `/plan` [on/off] | 切换计划模式 |
+| `/all <文本>` | 广播到所有活跃工作区（L3 模式）|
+| `/resume` [会话] | 恢复已持久化的会话 |
+| `/reset` | 重置当前会话 |
+| `/stop` | 中断当前正在运行的任务 |
 
 ---
 
-## Development
+## 关键行为
+
+- **思考输出（流式）**：OpenCode 思考片段按片段流式推送，以 `[思考]` / `[Thinking]` 前缀发送，不再攒到最后一次性吐出；`/think on` 推送全文。
+- **工具调用（流式）**：每个 `tool_call` 事件立即发送，不再缓冲，附带工具名和参数；输出顺序与 CLI 实际事件到达顺序一致。
+- **会话跟随**：Codex 0.155+ 按需持久化线程；可见客户端默认使用新会话（`new`）。恢复可通过 `--session-start-mode restore`、`/resume`，以及重复使用已连接的可见窗口。
+- **daemon 切换**：直接启动器不会替换运行中的 daemon；它们加入它，或者在没有 daemon 时启动一个临时 daemon。过期的 daemon 端点会自动清理。
+
+---
+
+## 开发
 
 ```bash
 bun install
@@ -167,41 +159,43 @@ bun test test
 
 ---
 
-## Package publishing
+## 包发布
 
-Three names with identical content: `cli-wechat-bridge`, `@unlinearity/cli-wechat-bridge`, `cli-chat-bridge`.
+三个包名同构（内容相同）：`cli-qq-bridge`。
 
 ```bash
 npm run publish:dual -- --dry-run
 npm run publish:dual -- --otp <code>
 ```
 
-## License
+---
 
-This repository is AGPL-3.0-or-later. Every source file starts with an SPDX copyright header that must be kept intact in new files and modifications; never remove or alter it. Any contributor or AI agent making modifications that are later distributed or served over a network must release the complete corresponding source under AGPL-3.0-or-later (see README License section).
+## 许可证
 
-See `LICENSE.txt`.
+本仓库使用 AGPL-3.0-or-later。每个源文件开头必须保留 SPDX 版权声明；在新文件和修改中不要删除或篡改。任何贡献者或 AI 代理做出的、后来被分发或通过网络服务的修改，必须根据 AGPL-3.0-or-later 公开完整对应源代码（见 README 许可证部分）。
+
+另见 `LICENSE.txt`。
 
 ---
 
-## Documentation
+## 文档
 
-- `docs/releases/<version>.md` — release notes
-- `docs/releases/<version>_CN.md` — Chinese release notes
-- `docs/architecture.md` — architecture overview
-- `docs/development.md` — development commands
-- `docs/configuration.md` — configuration
-- `docs/command-audit.md` — command audit
-
----
-
-## Commit guidance
-
-All commits require explicit owner approval first. Use Conventional Commit prefixes such as `feat:`, `fix:`, `refactor:`, `docs:`, `test:`, `build:`, `chore:`. Keep subjects imperative and behavior-focused.
+- `docs/releases/<version>.md` — 发行说明
+- `docs/releases/<version>_CN.md` — 中文发行说明
+- `docs/architecture.md` — 架构概述
+- `docs/development.md` — 开发命令
+- `docs/configuration.md` — 配置
+- `docs/command-audit.md` — 命令审计
 
 ---
 
-## Quality gates
+## 提交指导
+
+所有提交需要先得到所有者明确批准。使用常规提交前缀，如 `feat:`、`fix:`、`refactor:`、`docs:`、`test:`、`build:`、`chore:`。保持标语为祈使句、行为导向。
+
+---
+
+## 质量检查
 
 ```bash
 npm run lint
@@ -213,4 +207,4 @@ npm run quality
 
 ---
 
-*Internal planning/audit/research documents are local-only and must never be staged, committed, pushed, or packaged.*
+*内部计划、审计和研究文档仅供本地使用，绝不得暂存、提交、推送或打包。*
