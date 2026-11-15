@@ -177,6 +177,17 @@ export type BridgeEvent =
       timestamp: string;
     }
   | {
+      type: "think";
+      text: string;
+      timestamp: string;
+    }
+  | {
+      type: "tool_call";
+      name: string;
+      args?: string;
+      timestamp: string;
+    }
+  | {
       type: "final_reply";
       text: string;
       timestamp: string;

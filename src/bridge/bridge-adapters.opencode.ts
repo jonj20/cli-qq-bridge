@@ -2655,6 +2655,40 @@ export class OpenCodeServerAdapter implements BridgeAdapter {
       }
     }
 
+    // 非文本部分：思考过程和工具调用，转发为独立事件供远程通道显示
+    if (!part) {
+      return;
+    }
+    const partType = typeof part.type === "string" ? part.type : "";
+    if (partType === "thinking" || partType === "reasoning") {
+      const thinkText = typeof part.text === "string" ? part.text : "";
+      if (thinkText) {
+        this.emit({
+          type: "think",
+          text: thinkText,
+          timestamp: nowIso(),
+        });
+      }
+      return;
+    }
+    if (partType === "tool_call" || partType === "tool") {
+      const toolName =
+        typeof part.name === "string" ? part.name : typeof part.id === "string" ? part.id : "unknown";
+      const toolArgs =
+        typeof part.args === "string"
+          ? part.args
+          : part.args
+            ? JSON.stringify(part.args)
+            : undefined;
+      this.emit({
+        type: "tool_call",
+        name: toolName,
+        args: toolArgs,
+        timestamp: nowIso(),
+      });
+      return;
+    }
+
     if (this.state.status !== "busy") {
       return;
     }
@@ -2746,6 +2780,40 @@ export class OpenCodeServerAdapter implements BridgeAdapter {
         : undefined;
     const partId = this.extractPartId(properties);
     const knownPartType = partId ? this.partTypeByPartId.get(partId) : undefined;
+
+    // 思考/工具调用部分的增量，转发为独立事件
+    if (knownPartType === "thinking" || knownPartType === "reasoning") {
+      const delta =
+        typeof properties.delta === "string"
+          ? properties.delta
+          : undefined;
+      if (delta) {
+        this.emit({
+          type: "think",
+          text: delta,
+          timestamp: nowIso(),
+        });
+      }
+      return;
+    }
+    if (knownPartType === "tool_call" || knownPartType === "tool") {
+      const delta =
+        typeof properties.delta === "string"
+          ? properties.delta
+          : undefined;
+      const toolName =
+        typeof properties.name === "string" ? properties.name : "unknown";
+      if (delta) {
+        this.emit({
+          type: "tool_call",
+          name: toolName,
+          args: delta,
+          timestamp: nowIso(),
+        });
+      }
+      return;
+    }
+
     if (knownPartType && knownPartType !== "text") {
       return;
     }

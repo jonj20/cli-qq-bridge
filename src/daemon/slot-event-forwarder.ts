@@ -138,28 +138,63 @@ export function handleSlotEvent(host: SlotEventHost, slot: DaemonSlot, event: Br
     stdout: (next) => {
       slot.lastOutputAt = Date.now();
       if (shouldForwardBridgeEvent(slot.adapter, next.type)) {
+        const text = host.prefix(slot, next.text);
+        host.daemonLog(`stdout_push: adapter=${slot.adapter} chars=${Array.from(text).length} preview=${truncatePreview(text, 200)}`);
         host.outbound.trackForwardTask(
           host.queueMessage(
             host.operatorId,
-            host.prefix(slot, next.text),
+            text,
             "message",
             eventTarget,
           ).then(() => undefined),
         );
+      } else {
+        host.daemonLog(`stdout_skip: adapter=${slot.adapter} chars=${Array.from(next.text).length}`);
       }
     },
     stderr: (next) => {
       slot.lastOutputAt = Date.now();
       if (shouldForwardBridgeEvent(slot.adapter, next.type)) {
+        const text = host.prefix(slot, next.text);
+        host.daemonLog(`stderr_push: adapter=${slot.adapter} chars=${Array.from(text).length} preview=${truncatePreview(text, 200)}`);
         host.outbound.trackForwardTask(
           host.queueMessage(
             host.operatorId,
-            host.prefix(slot, next.text),
+            text,
             "message",
             eventTarget,
           ).then(() => undefined),
         );
+      } else {
+        host.daemonLog(`stderr_skip: adapter=${slot.adapter} chars=${Array.from(next.text).length}`);
       }
+    },
+    think: (next) => {
+      slot.lastOutputAt = Date.now();
+      const text = host.prefix(slot, `[思考] ${next.text}`);
+      host.daemonLog(`think_push: adapter=${slot.adapter} chars=${Array.from(text).length} preview=${truncatePreview(text, 200)}`);
+      host.outbound.trackForwardTask(
+        host.queueMessage(
+          host.operatorId,
+          text,
+          "notice",
+          eventTarget,
+        ).then(() => undefined),
+      );
+    },
+    toolCall: (next) => {
+      slot.lastOutputAt = Date.now();
+      const argsPreview = next.args ? ` args=${truncatePreview(next.args, 200)}` : "";
+      const text = host.prefix(slot, `[工具调用] ${next.name}${argsPreview}`);
+      host.daemonLog(`tool_call_push: adapter=${slot.adapter} name=${next.name} args_len=${next.args ? Array.from(next.args).length : 0}`);
+      host.outbound.trackForwardTask(
+        host.queueMessage(
+          host.operatorId,
+          text,
+          "notice",
+          eventTarget,
+        ).then(() => undefined),
+      );
     },
     finalReply: (next) => {
       host.typing.stop(slot, "final_reply");
@@ -168,6 +203,7 @@ export function handleSlotEvent(host: SlotEventHost, slot: DaemonSlot, event: Br
       const autoSummary = formatAutoApprovalSummary(slot.autoApprovals);
       slot.autoApprovals = {};
       const text = autoSummary ? appendBeforeAttachmentBlock(next.text, autoSummary) : next.text;
+      host.daemonLog(`final_reply_send: adapter=${slot.adapter} chars=${Array.from(text).length} preview=${truncatePreview(text, 200)}`);
       host.outbound.trackForwardTask(slot.outputBatcher.flushNow().then(async () => {
         await channelPort.send({
           target: eventTarget,

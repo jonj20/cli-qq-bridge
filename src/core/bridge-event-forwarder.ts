@@ -11,6 +11,8 @@ type EventOf<T extends BridgeEvent["type"]> = Extract<BridgeEvent, { type: T }>;
 export type BridgeEventForwarderHandlers = {
   stdout?: (event: EventOf<"stdout">) => void | Promise<void>;
   stderr?: (event: EventOf<"stderr">) => void | Promise<void>;
+  think?: (event: EventOf<"think">) => void | Promise<void>;
+  toolCall?: (event: EventOf<"tool_call">) => void | Promise<void>;
   finalReply?: (event: EventOf<"final_reply">) => void | Promise<void>;
   status?: (event: EventOf<"status">) => void | Promise<void>;
   notice?: (event: EventOf<"notice">) => void | Promise<void>;
@@ -38,6 +40,12 @@ export async function forwardBridgeEvent(
       return;
     case "stderr":
       await handlers.stderr?.(event);
+      return;
+    case "think":
+      await handlers.think?.(event);
+      return;
+    case "tool_call":
+      await handlers.toolCall?.(event);
       return;
     case "final_reply":
       await handlers.finalReply?.(event);
