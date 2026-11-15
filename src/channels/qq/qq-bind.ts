@@ -74,7 +74,7 @@ export function generateBindKey(): string {
   return crypto.randomBytes(32).toString("base64");
 }
 
-export function buildConnectUrl(taskId: string, source = "cli-wechat-bridge"): string {
+export function buildConnectUrl(taskId: string, source = "cli-qq-bridge"): string {
   const params = new URLSearchParams({
     task_id: taskId,
     _wv: "2",

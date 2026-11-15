@@ -44,8 +44,8 @@ function ensureSupportedNodeVersion(extraArgs = []) {
   const minimumText = piRequested ? MIN_PI_NODE_VERSION_TEXT : MIN_NODE_VERSION_TEXT;
   process.stderr.write(
     [
-      `[cli-wechat-bridge] Node.js >= ${minimumText} is required, but you are running ${process.version}.`,
-      `[cli-wechat-bridge] 需要 Node.js >= ${minimumText}，当前版本为 ${process.version}。`,
+      `[cli-qq-bridge] Node.js >= ${minimumText} is required, but you are running ${process.version}.`,
+      `[cli-qq-bridge] 需要 Node.js >= ${minimumText}，当前版本为 ${process.version}。`,
       "Install the latest LTS from https://nodejs.org/ (or via nvm), then retry.",
       "Set CLI_BRIDGE_SKIP_NODE_CHECK=1 to bypass this check at your own risk.",
       "",

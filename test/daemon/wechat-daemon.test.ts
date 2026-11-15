@@ -539,7 +539,7 @@ describe("wechat-daemon helpers", () => {
             pid: 100,
             parentPid: 50,
             commandLine:
-              '"C:\\Program Files\\nodejs\\node.exe" C:\\Users\\unlin\\AppData\\Roaming\\npm\\node_modules\\cli-wechat-bridge\\bin\\wechat-daemon.mjs --cwd C:\\Users\\unlin',
+              '"C:\\Program Files\\nodejs\\node.exe" C:\\Users\\unlin\\AppData\\Roaming\\npm\\node_modules\\cli-qq-bridge\\bin\\wechat-daemon.mjs --cwd C:\\Users\\unlin',
           },
           {
             pid: 101,

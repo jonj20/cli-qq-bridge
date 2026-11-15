@@ -74,7 +74,7 @@
 请确认已经安装正式包：
 
 ```bash
-npm install -g cli-wechat-bridge@latest
+npm install -g cli-qq-bridge@latest
 ```
 
 如果命令仍不存在，请检查 npm 全局 bin 目录是否已加入 `PATH`。使用源码仓库提供全局命令的方式见 [开发说明](development.md#全局命令开发验证)。
@@ -84,7 +84,7 @@ npm install -g cli-wechat-bridge@latest
 如果全局安装看似完成，但出现类似警告：
 
 ```text
-npm warn install-scripts cli-wechat-bridge@<installed-version> ... blocked because ... allowScripts
+npm warn install-scripts cli-qq-bridge@<installed-version> ... blocked because ... allowScripts
 npm warn install-scripts node-pty@1.1.0 ... blocked because ... allowScripts
 ```
 
@@ -93,24 +93,24 @@ npm warn install-scripts node-pty@1.1.0 ... blocked because ... allowScripts
 请执行干净重装，并在同一条安装命令中同时指定包名和允许的脚本包：
 
 ```bash
-npm uninstall -g cli-wechat-bridge
-npm install -g cli-wechat-bridge@latest --allow-scripts=cli-wechat-bridge,node-pty
+npm uninstall -g cli-qq-bridge
+npm install -g cli-qq-bridge@latest --allow-scripts=cli-qq-bridge,node-pty
 ```
 
 如果希望后续升级继续使用该信任配置，可以写入用户级 npm 配置，再正常安装：
 
 ```bash
-npm config set allow-scripts=cli-wechat-bridge,node-pty --location=user
-npm install -g cli-wechat-bridge@latest
+npm config set allow-scripts=cli-qq-bridge,node-pty --location=user
+npm install -g cli-qq-bridge@latest
 ```
 
 不要省略安装包名。以下命令是错误的：
 
 ```bash
-npm install -g --allow-scripts=cli-wechat-bridge,node-pty
+npm install -g --allow-scripts=cli-qq-bridge,node-pty
 ```
 
-没有 `cli-wechat-bridge@latest` 时，npm 会尝试把当前目录作为待安装项目，并读取当前目录的 `package.json`；在用户主目录执行时通常会报：
+没有 `cli-qq-bridge@latest` 时，npm 会尝试把当前目录作为待安装项目，并读取当前目录的 `package.json`；在用户主目录执行时通常会报：
 
 ```text
 ENOENT: no such file or directory, open '/home/<user>/package.json'
@@ -169,7 +169,7 @@ apk add build-base python3
 安装编译工具后，重新安装 bridge：
 
 ```bash
-npm install -g cli-wechat-bridge@latest
+npm install -g cli-qq-bridge@latest
 ```
 
 **Windows：**
@@ -184,7 +184,7 @@ Windows 包含预编译模块，但以下情况可能导致加载失败：
 ```bash
 npm rebuild node-pty
 # 或重新安装
-npm install -g cli-wechat-bridge@latest
+npm install -g cli-qq-bridge@latest
 ```
 
 **macOS：**
@@ -223,7 +223,7 @@ Error: Input must be provided either through stdin or as a prompt argument when 
 本项目的 `postinstall` 脚本会在安装后自动为 `spawn-helper` 补上执行位。如果仍遇到该问题（例如使用了 `--ignore-scripts` 安装），可手动修复：
 
 ```bash
-PKG="$(npm root -g)/cli-wechat-bridge/node_modules/node-pty"
+PKG="$(npm root -g)/cli-qq-bridge/node_modules/node-pty"
 chmod +x "$PKG/prebuilds/darwin-arm64/spawn-helper" \
          "$PKG/prebuilds/darwin-x64/spawn-helper" 2>/dev/null
 ```

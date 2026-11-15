@@ -1,7 +1,7 @@
 # Repository Guidelines
 
 ## Project Mental Model
-CLI WeChat Bridge lets one WeChat iLink account or one WeCom smart-bot account drive local CLI agents from a normal project directory. The user-facing npm package is `cli-wechat-bridge`; `@unlinearity/cli-wechat-bridge` is kept as a compatibility mirror for existing users.
+CLI QQ Bridge lets one WeChat iLink account or one WeCom smart-bot account drive local CLI agents from a normal project directory. The user-facing npm package is `cli-qq-bridge`; `@unlinearity/cli-wechat-bridge` is kept as a compatibility mirror for existing users.
 
 One daemon engine (`src/daemon`) runs every bridge; there is no separate standalone bridge runtime. It has two user-facing modes:
 - `wechat-daemon` (resident service): the preferred long-lived mode. It owns the channel connection, keeps Codex, Claude Code, OpenCode, and Pi slots for several workspaces, and starts with no bridge mode until the first window opens. Remote opens use the current window's workspace, or the home workspace (the daemon's startup directory) while no window is open.
@@ -107,7 +107,7 @@ npm install -g .
 ```
 When npm blocks the package postinstall script with `allowScripts`, restore the node-pty spawn-helper permission manually:
 ```bash
-node "$(npm root -g)/cli-wechat-bridge/scripts/ensure-node-pty-permissions.mjs"
+node "$(npm root -g)/cli-qq-bridge/scripts/ensure-node-pty-permissions.mjs"
 ```
 
 ## Coding Style
@@ -159,10 +159,10 @@ Network failures to `https://ilinkai.weixin.qq.com` may be proxy-related even wh
 ## npm Package Publishing (three names)
 The root `package.json` must keep:
 ```json
-"name": "cli-wechat-bridge"
+"name": "cli-qq-bridge"
 ```
 
-Since 1.3.0 every release is published under three names with identical content: `cli-wechat-bridge` (primary), `@unlinearity/cli-wechat-bridge` (compatibility mirror), and `cli-chat-bridge` (the project's upcoming name). Publish all three with:
+Since 1.3.0 every release is published under three names with identical content: `cli-qq-bridge` (primary), `@unlinearity/cli-wechat-bridge` (compatibility mirror), and `cli-chat-bridge` (the project's upcoming name). Publish all three with:
 ```bash
 npm run publish:dual -- --dry-run
 npm run publish:dual -- --otp <code>
@@ -170,7 +170,7 @@ npm run publish:dual -- --otp <code>
 
 `scripts/publish-dual.mjs` (kept under its old name) is the source of truth for publishing:
 - it builds once before publishing;
-- it publishes `cli-wechat-bridge` from the repository root;
+- it publishes `cli-qq-bridge` from the repository root;
 - it creates a temporary mirror package for each name in `MIRROR_PACKAGE_NAMES` (`@unlinearity/cli-wechat-bridge`, `cli-chat-bridge`);
 - each mirror contains `bin/`, `dist/`, `skills/`, both READMEs, `LICENSE.txt`, the node-pty permission script, and rewritten package metadata that keeps only `postinstall`;
 - it checks `<package>@<version>` first and skips already-published versions;
@@ -180,7 +180,7 @@ The three packages expose the same commands, so a user can install only one of t
 
 Do not manually rename `package.json` to publish a mirror package. Do not claim a package was published until `npm view <name> version dist-tags --registry=https://registry.npmjs.org/ --json` confirms it.
 
-README badges cannot natively combine download counts for several npm packages. Keep primary package badges pointed at `cli-wechat-bridge` and use a separate scoped-package downloads badge for compatibility visibility.
+README badges cannot natively combine download counts for several npm packages. Keep primary package badges pointed at `cli-qq-bridge` and use a separate scoped-package downloads badge for compatibility visibility.
 
 ## Release Process
 Use this checklist for a normal release:
@@ -197,7 +197,7 @@ Use this checklist for a normal release:
 11. Publish with `npm run publish:dual -- --otp <code>` when npm requests OTP, or without `--otp` when web auth is already valid.
 12. Verify all three packages on the registry:
 ```bash
-npm view cli-wechat-bridge version dist-tags --registry=https://registry.npmjs.org/ --json
+npm view cli-qq-bridge version dist-tags --registry=https://registry.npmjs.org/ --json
 npm view @unlinearity/cli-wechat-bridge version dist-tags --registry=https://registry.npmjs.org/ --json
 npm view cli-chat-bridge version dist-tags --registry=https://registry.npmjs.org/ --json
 ```

@@ -7,7 +7,7 @@
 安装 skill:
 
 ```bash
-node "$(npm root -g)/cli-wechat-bridge/skills/codex-bridge/scripts/install.mjs"
+node "$(npm root -g)/cli-qq-bridge/skills/codex-bridge/scripts/install.mjs"
 ```
 
 源码开发时,可直接运行 `node skills/codex-bridge/scripts/install.mjs`。安装目录为 `${CODEX_HOME:-~/.codex}/skills/codex-bridge`。
@@ -49,7 +49,7 @@ node "$(npm root -g)/cli-wechat-bridge/skills/codex-bridge/scripts/install.mjs"
 Install the skill:
 
 ```bash
-node "$(npm root -g)/cli-wechat-bridge/skills/codex-bridge/scripts/install.mjs"
+node "$(npm root -g)/cli-qq-bridge/skills/codex-bridge/scripts/install.mjs"
 ```
 
 From a source checkout, run `node skills/codex-bridge/scripts/install.mjs`. The destination is `${CODEX_HOME:-~/.codex}/skills/codex-bridge`.

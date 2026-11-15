@@ -41,7 +41,7 @@ function extractSessionId(route: TuiRoute): string | null {
 }
 
 export default {
-  id: "cli-wechat-bridge.session-route",
+  id: "cli-qq-bridge.session-route",
   tui: async (
     api: OpenCodeTuiPluginApi,
     options: OpenCodeTuiPluginOptions | undefined,

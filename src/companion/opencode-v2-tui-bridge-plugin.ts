@@ -25,7 +25,7 @@ const ROUTE_POLL_INTERVAL_MS = 100;
 const MAX_BUFFER_SIZE = 1024 * 1024;
 
 export default {
-  id: "cli-wechat-bridge.session-route-v2",
+  id: "cli-qq-bridge.session-route-v2",
   setup(context: OpenCodeV2TuiContext): () => void {
     const port = Number(context.options.port);
     const token = typeof context.options.token === "string" ? context.options.token : "";

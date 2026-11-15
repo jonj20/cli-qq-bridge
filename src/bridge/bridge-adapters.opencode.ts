@@ -1073,7 +1073,7 @@ export class OpenCodeServerAdapter implements BridgeAdapter {
       fs.writeFileSync(
         path.join(configDir, "package.json"),
         `${JSON.stringify({
-          name: "cli-wechat-bridge-opencode-tui-route",
+          name: "cli-qq-bridge-opencode-tui-route",
           private: true,
           type: "module",
         }, null, 2)}\n`,

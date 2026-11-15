@@ -11,7 +11,7 @@ Keep the invoking Codex conversation and its context. The launcher prefix select
 
 ## Attach the current conversation
 
-1. Resolve the launcher: the installed package's `wechat-codex` / `wecom-codex` / `telegram-codex` (find it with `npm root -g`; primary package `cli-wechat-bridge`, mirror `@unlinearity/cli-wechat-bridge`), or the source-checkout equivalents.
+1. Resolve the launcher: the installed package's `wechat-codex` / `wecom-codex` / `telegram-codex` (find it with `npm root -g`; primary package `cli-qq-bridge`, mirror `@unlinearity/cli-wechat-bridge`), or the source-checkout equivalents.
 2. Run the attach command from the project directory (or pass `--cwd`):
    ```bash
    <channel>-codex --cwd <project> --attach-current-session   # prefix: wechat | wecom | telegram

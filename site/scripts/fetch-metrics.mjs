@@ -33,8 +33,8 @@ async function totalDownloads(name) {
 
 const [repo, npm, unscopedTotal, scopedTotal] = await Promise.all([
   fetchQuietly("https://api.github.com/repos/UNLINEARITY/CLI-WeChat-Bridge"),
-  fetchQuietly("https://registry.npmjs.org/cli-wechat-bridge/latest"),
-  totalDownloads("cli-wechat-bridge"),
+  fetchQuietly("https://registry.npmjs.org/cli-qq-bridge/latest"),
+  totalDownloads("cli-qq-bridge"),
   totalDownloads("@unlinearity/cli-wechat-bridge"),
 ]);
 if (repo?.stargazers_count != null) fallback.stars = repo.stargazers_count;

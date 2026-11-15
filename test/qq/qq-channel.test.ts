@@ -172,7 +172,7 @@ describe("qq config", () => {
 describe("qq bind protocol", () => {
   test("builds connect URL and decrypts AES-256-GCM secret", () => {
     const key = generateBindKey();
-    const url = buildConnectUrl("task-123", "cli-wechat-bridge");
+    const url = buildConnectUrl("task-123", "cli-qq-bridge");
     expect(url).toContain("https://q.qq.com/qqbot/openclaw/connect.html");
     expect(url).toContain("task_id=task-123");
 

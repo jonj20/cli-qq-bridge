@@ -24,7 +24,7 @@ export interface VersionInfo {
 
 // npm registry 是权威更新源——它是用户实际安装的渠道;GitHub tags 作为回退,
 // 以便在 registry 暂时不可达或包尚未发布时仍能给出最新版本。
-const NPM_PACKAGE_NAME = "cli-wechat-bridge";
+const NPM_PACKAGE_NAME = "cli-qq-bridge";
 const DEFAULT_NPM_REGISTRY_URL = `https://registry.npmjs.org/${NPM_PACKAGE_NAME}/latest`;
 const DEFAULT_GITHUB_TAGS_URL =
   "https://api.github.com/repos/UNLINEARITY/CLI-WeChat-Bridge/tags?per_page=20";
@@ -112,7 +112,7 @@ export async function fetchLatestVersion(
 
 /**
  * Name of the npm package this copy was installed from: the same build ships
- * as cli-chat-bridge, cli-wechat-bridge, and @unlinearity/cli-wechat-bridge,
+ * as cli-chat-bridge, cli-qq-bridge, and @unlinearity/cli-wechat-bridge,
  * and reinstall hints must name the one the user has, or npm refuses to
  * install a second package with the same commands.
  */

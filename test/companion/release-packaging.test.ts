@@ -19,7 +19,7 @@ describe("release package metadata", () => {
   test("keeps the root versions and command inventories aligned", () => {
     const lock = JSON.parse(read("package-lock.json"));
     const bunVersion = read("bun.lock").match(/"workspaces":\s*\{\s*"":\s*\{[\s\S]*?"version":\s*"([^"]+)"/)?.[1];
-    expect(packageJson.name).toBe("cli-wechat-bridge");
+    expect(packageJson.name).toBe("cli-qq-bridge");
     expect(lock.version).toBe(packageJson.version);
     expect(lock.packages[""].version).toBe(packageJson.version);
     expect(bunVersion).toBe(packageJson.version);

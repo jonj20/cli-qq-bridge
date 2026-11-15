@@ -1,5 +1,5 @@
 {
-  "name": "cli-wechat-bridge",
+  "name": "cli-qq-bridge",
   "version": "1.4.1",
   "description": "CLI bridge for Codex, Claude Code, OpenCode, and Pi over WeChat, WeCom, Telegram, and QQ",
   "type": "module",

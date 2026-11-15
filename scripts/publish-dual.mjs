@@ -15,7 +15,7 @@ import { fileURLToPath } from "node:url";
 const SCRIPT_DIR = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(SCRIPT_DIR, "..");
 const PACKAGE_JSON_PATH = path.join(REPO_ROOT, "package.json");
-const PRIMARY_PACKAGE_NAME = "cli-wechat-bridge";
+const PRIMARY_PACKAGE_NAME = "cli-qq-bridge";
 // Mirrors carry the same build under other names: the scoped compatibility
 // package for existing users, and the project's upcoming name.
 const COMPAT_PACKAGE_NAME = "@unlinearity/cli-wechat-bridge";
@@ -150,7 +150,7 @@ function printHelp() {
     [
       "Usage: npm run publish:dual -- [--dry-run] [--registry <url>] [--tag <tag>] [--otp <code>]",
       "",
-      "Publishes cli-wechat-bridge as the primary package, plus @unlinearity/cli-wechat-bridge and cli-chat-bridge as mirrors of the same build.",
+      "Publishes cli-qq-bridge as the primary package, plus @unlinearity/cli-wechat-bridge and cli-chat-bridge as mirrors of the same build.",
       "Existing package versions are skipped automatically.",
       "",
       "Options:",
@@ -220,7 +220,7 @@ export function createMirrorPackage(
   sourceRoot = REPO_ROOT,
   mirrorName = COMPAT_PACKAGE_NAME,
 ) {
-  const mirrorRoot = fs.mkdtempSync(path.join(os.tmpdir(), "cli-wechat-bridge-mirror-"));
+  const mirrorRoot = fs.mkdtempSync(path.join(os.tmpdir(), "cli-qq-bridge-mirror-"));
 
   for (const fileName of MIRROR_FILES) {
     copyMirrorFile(path.join(sourceRoot, fileName), path.join(mirrorRoot, fileName));
