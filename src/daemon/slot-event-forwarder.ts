@@ -118,6 +118,37 @@ export function handleSlotEvent(host: SlotEventHost, slot: DaemonSlot, event: Br
     ? host.resolveSlotOutputTarget(slot)
     : host.fallbackConversation;
   const eventTask = slot.turns.activeTask;
+
+  const flushThinkBuffer = (): void => {
+    if (slot.thinkTimer) {
+      clearTimeout(slot.thinkTimer);
+      slot.thinkTimer = null;
+    }
+    if (slot.thinkBuffer.length === 0) {
+      return;
+    }
+    const text = host.prefix(slot, slot.thinkBuffer.join("\n"));
+    slot.thinkBuffer = [];
+    host.outbound.trackForwardTask(
+      host.queueMessage(host.operatorId, text, "notice", eventTarget).then(() => undefined),
+    );
+  };
+
+  const flushToolCallBuffer = (): void => {
+    if (slot.toolCallTimer) {
+      clearTimeout(slot.toolCallTimer);
+      slot.toolCallTimer = null;
+    }
+    if (slot.toolCallBuffer.length === 0) {
+      return;
+    }
+    const text = host.prefix(slot, slot.toolCallBuffer.join("\n"));
+    slot.toolCallBuffer = [];
+    host.outbound.trackForwardTask(
+      host.queueMessage(host.operatorId, text, "notice", eventTarget).then(() => undefined),
+    );
+  };
+
   if (adapterState.pendingApprovals !== undefined) {
     const previous = new Map(slot.pendingConfirmations.map((pending) => [pending.requestId, pending]));
     slot.pendingConfirmations = adapterState.pendingApprovals.map((request) => {
@@ -171,32 +202,44 @@ export function handleSlotEvent(host: SlotEventHost, slot: DaemonSlot, event: Br
     },
     think: (next) => {
       slot.lastOutputAt = Date.now();
-      const fullText = host.prefix(slot, `[思考] ${next.text}`);
-      const text = slot.showFullThink ? fullText : host.prefix(slot, "[思考中...]");
-      host.daemonLog(`think_push: adapter=${slot.adapter} full=${slot.showFullThink} chars=${Array.from(text).length}`);
-      host.outbound.trackForwardTask(
-        host.queueMessage(
-          host.operatorId,
-          text,
-          "notice",
-          eventTarget,
-        ).then(() => undefined),
-      );
+      const text = host.prefix(slot, `[思考] ${next.text}`);
+      if (slot.showFullThink) {
+        host.daemonLog(`think_push: adapter=${slot.adapter} full=true chars=${Array.from(text).length}`);
+        host.outbound.trackForwardTask(
+          host.queueMessage(host.operatorId, text, "notice", eventTarget).then(() => undefined),
+        );
+        return;
+      }
+      slot.thinkBuffer.push(next.text);
+      if (slot.thinkTimer) {
+        clearTimeout(slot.thinkTimer);
+      }
+      slot.thinkTimer = setTimeout(() => {
+        flushThinkBuffer();
+      }, 5000);
+      slot.thinkTimer.unref?.();
+      host.daemonLog(`think_buffered: adapter=${slot.adapter} buffer_len=${slot.thinkBuffer.length}`);
     },
     toolCall: (next) => {
       slot.lastOutputAt = Date.now();
       const argsPreview = next.args ? ` args=${truncatePreview(next.args, 200)}` : "";
-      const fullText = host.prefix(slot, `[工具调用] ${next.name}${argsPreview}`);
-      const text = slot.showFullThink ? fullText : host.prefix(slot, "[工具调用中...]");
-      host.daemonLog(`tool_call_push: adapter=${slot.adapter} full=${slot.showFullThink} name=${next.name}`);
-      host.outbound.trackForwardTask(
-        host.queueMessage(
-          host.operatorId,
-          text,
-          "notice",
-          eventTarget,
-        ).then(() => undefined),
-      );
+      const text = host.prefix(slot, `[工具调用] ${next.name}${argsPreview}`);
+      if (slot.showFullThink) {
+        host.daemonLog(`tool_call_push: adapter=${slot.adapter} full=true name=${next.name}`);
+        host.outbound.trackForwardTask(
+          host.queueMessage(host.operatorId, text, "notice", eventTarget).then(() => undefined),
+        );
+        return;
+      }
+      slot.toolCallBuffer.push(next.name);
+      if (slot.toolCallTimer) {
+        clearTimeout(slot.toolCallTimer);
+      }
+      slot.toolCallTimer = setTimeout(() => {
+        flushToolCallBuffer();
+      }, 5000);
+      slot.toolCallTimer.unref?.();
+      host.daemonLog(`tool_call_buffered: adapter=${slot.adapter} buffer_len=${slot.toolCallBuffer.length}`);
     },
     finalReply: (next) => {
       host.typing.stop(slot, "final_reply");
@@ -309,6 +352,8 @@ export function handleSlotEvent(host: SlotEventHost, slot: DaemonSlot, event: Br
     },
     taskComplete: () => {
       host.typing.stop(slot, "task_complete");
+      flushThinkBuffer();
+      flushToolCallBuffer();
       host.outbound.trackForwardTask(slot.outputBatcher.flushNow().then(() => {
         slot.pendingConfirmations = [];
         slot.autoApprovals = {};
@@ -321,6 +366,8 @@ export function handleSlotEvent(host: SlotEventHost, slot: DaemonSlot, event: Br
     },
     taskFailed: (next) => {
       host.typing.stop(slot, "task_failed");
+      flushThinkBuffer();
+      flushToolCallBuffer();
       host.outbound.trackForwardTask(slot.outputBatcher.flushNow().then(async () => {
         slot.pendingConfirmations = [];
         slot.autoApprovals = {};

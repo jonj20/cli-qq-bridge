@@ -67,6 +67,14 @@ export type DaemonSlot = {
   lastFinalReplyAtMs: number;
   /** 开关：开启后 think/tool_call 事件会推送全文，否则只推送简短提示。 */
   showFullThink: boolean;
+  /** think 消息缓冲区，用于短时间内拼接成一条发送。 */
+  thinkBuffer: string[];
+  /** tool_call 消息缓冲区，用于短时间内拼接成一条发送。 */
+  toolCallBuffer: string[];
+  /** think 消息防抖定时器。 */
+  thinkTimer: ReturnType<typeof setTimeout> | null;
+  /** tool_call 消息防抖定时器。 */
+  toolCallTimer: ReturnType<typeof setTimeout> | null;
   eventForwardChain: Promise<void>;
   deferredInputs: DeferredDaemonInput[];
   drainingDeferredInputs: boolean;
