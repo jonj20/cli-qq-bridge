@@ -376,6 +376,7 @@ export class OpenCodeServerAdapter implements BridgeAdapter {
   private readonly loggedUnknownEventTypes = new Set<string>();
   private readonly emittedTextByPartId = new Map<string, string>();
   private readonly partTypeByPartId = new Map<string, string>();
+  private readonly completedThinkPartIds = new Set<string>();
   private readonly visibleReplyPartsByPartId = new Map<string, VisibleReplyPart>();
   private readonly visibleReplyMessageIds = new Set<string>();
   private readonly observedOpenCodeMessages = new Map<string, ObservedOpenCodeMessage>();
@@ -1588,16 +1589,23 @@ export class OpenCodeServerAdapter implements BridgeAdapter {
       return;
     }
 
-    if (this.options.sessionStartMode === "new") {
-      const session = this.unwrapOrThrow(
-        await this.client.session.create({
-          directory: this.options.cwd,
-          workspace: this.activeWorkspaceId ?? undefined,
-        }),
-      );
-      this.switchSharedSession(session, {
-        source: "local",
-        reason: "local_follow",
+    let listedSessions: SdkSession[] = [];
+
+    try {
+      const result = await this.client.session.list();
+      if (result.data && result.data.length > 0) {
+        listedSessions = result.data.filter((session) => this.isCurrentDirectorySession(session));
+      }
+    } catch {
+      // Session listing is optional at startup.
+    }
+
+    // 优先复用已有的当前目录 session，避免每次启动 daemon 都新建 session
+    const latest = listedSessions[0];
+    if (latest) {
+      this.switchSharedSession(latest, {
+        source: "restore",
+        reason: "startup_restore",
         syncVisible: false,
       });
       this.state.lastSessionSwitchAt = undefined;
@@ -1606,41 +1614,21 @@ export class OpenCodeServerAdapter implements BridgeAdapter {
       return;
     }
 
-    let listedSessions: SdkSession[] = [];
-
-    try {
-      const result = await this.client.session.list();
-      if (result.data && result.data.length > 0) {
-        listedSessions = result.data.filter((session) => this.isCurrentDirectorySession(session));
-        const latest = listedSessions[0];
-        if (latest) {
-          this.switchSharedSession(latest, {
-            source: "restore",
-            reason: "startup_restore",
-            syncVisible: false,
-          });
-          this.state.lastSessionSwitchAt = undefined;
-          this.state.lastSessionSwitchSource = undefined;
-          this.state.lastSessionSwitchReason = undefined;
-        }
-      }
-    } catch {
-      // Session listing is optional at startup.
-    }
-
-    if (this.options.initialSharedSessionId) {
-      const restoredSessionId = this.options.initialSharedSessionId;
-      const restoredSession = await this.getSessionForCurrentDirectory(restoredSessionId, listedSessions);
-      if (!restoredSession) {
-        return;
-      }
-
-      this.switchSharedSession(restoredSession, {
-        source: "restore",
-        reason: "startup_restore",
-        syncVisible: false,
-      });
-    }
+    // 没有已有 session，创建新的
+    const session = this.unwrapOrThrow(
+      await this.client.session.create({
+        directory: this.options.cwd,
+        workspace: this.activeWorkspaceId ?? undefined,
+      }),
+    );
+    this.switchSharedSession(session, {
+      source: "local",
+      reason: "local_follow",
+      syncVisible: false,
+    });
+    this.state.lastSessionSwitchAt = undefined;
+    this.state.lastSessionSwitchSource = undefined;
+    this.state.lastSessionSwitchReason = undefined;
   }
 
   private async hasSession(
@@ -2661,6 +2649,10 @@ export class OpenCodeServerAdapter implements BridgeAdapter {
     }
     const partType = typeof part.type === "string" ? part.type : "";
     if (partType === "thinking" || partType === "reasoning") {
+      // 同一个 thinking part 只发一次完整文本，避免 OpenCode 重复推送同一 part 导致思考内容重复
+      if (partId && this.completedThinkPartIds.has(partId)) {
+        return;
+      }
       const thinkText = typeof part.text === "string" ? part.text : "";
       if (thinkText) {
         this.emit({
@@ -2668,6 +2660,9 @@ export class OpenCodeServerAdapter implements BridgeAdapter {
           text: thinkText,
           timestamp: nowIso(),
         });
+        if (partId) {
+          this.completedThinkPartIds.add(partId);
+        }
       }
       return;
     }
@@ -2783,17 +2778,7 @@ export class OpenCodeServerAdapter implements BridgeAdapter {
 
     // 思考/工具调用部分的增量，转发为独立事件
     if (knownPartType === "thinking" || knownPartType === "reasoning") {
-      const delta =
-        typeof properties.delta === "string"
-          ? properties.delta
-          : undefined;
-      if (delta) {
-        this.emit({
-          type: "think",
-          text: delta,
-          timestamp: nowIso(),
-        });
-      }
+      // thinking 完整文本已在 handlePart 中发送，增量跳过，避免重复发送
       return;
     }
     if (knownPartType === "tool_call" || knownPartType === "tool") {
@@ -4346,6 +4331,7 @@ export class OpenCodeServerAdapter implements BridgeAdapter {
   private clearStreamedPartState(): void {
     this.emittedTextByPartId.clear();
     this.partTypeByPartId.clear();
+    this.completedThinkPartIds.clear();
     this.visibleReplyPartsByPartId.clear();
     this.visibleReplyMessageIds.clear();
   }

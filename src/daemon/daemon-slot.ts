@@ -70,7 +70,7 @@ export type DaemonSlot = {
   /** think 消息缓冲区，用于短时间内拼接成一条发送。 */
   thinkBuffer: string[];
   /** tool_call 消息缓冲区，用于短时间内拼接成一条发送。 */
-  toolCallBuffer: string[];
+  toolCallBuffer: { name: string; args?: string }[];
   /** think 消息防抖定时器。 */
   thinkTimer: ReturnType<typeof setTimeout> | null;
   /** tool_call 消息防抖定时器。 */

@@ -15,7 +15,7 @@ import {
 } from "../bridge/message-formatting.ts";
 import { appendBeforeAttachmentBlock } from "../bridge/outbound-attachments.ts";
 import { formatUserInputRequestMessage } from "../bridge/user-input-messages.ts";
-import { nowIso, truncatePreview } from "../bridge/bridge-utils.ts";
+import { normalizeOutput, nowIso, truncatePreview } from "../bridge/bridge-utils.ts";
 import { shouldForwardSessionSwitchEvent } from "../bridge/bridge-session-resume.ts";
 import {
   formatUserFacingBridgeFatalError,
@@ -119,34 +119,81 @@ export function handleSlotEvent(host: SlotEventHost, slot: DaemonSlot, event: Br
     : host.fallbackConversation;
   const eventTask = slot.turns.activeTask;
 
-  const flushThinkBuffer = (): void => {
+  const flushThinkBuffer = (): Promise<void> => {
     if (slot.thinkTimer) {
       clearTimeout(slot.thinkTimer);
       slot.thinkTimer = null;
     }
     if (slot.thinkBuffer.length === 0) {
-      return;
+      return Promise.resolve();
     }
-    const text = host.prefix(slot, slot.thinkBuffer.join("\n"));
+    let text = host.prefix(slot, `[思考]\n${slot.thinkBuffer.join("\n")}`);
+
+    if (slot.showFullThink) {
+      // 全文输出
+    } else if (text.length > 50) {
+      // 截断输出一部分
+      text = `${text.slice(0, 47)}...`;
+    }
+
     slot.thinkBuffer = [];
-    host.outbound.trackForwardTask(
-      host.queueMessage(host.operatorId, text, "notice", eventTarget).then(() => undefined),
-    );
+    host.daemonLog(`think_flush: adapter=${slot.adapter} count=${text.split("\n").length} chars=${Array.from(text).length} preview=${truncatePreview(text, 200)}`);
+    return host.queueMessage(host.operatorId, text, "notice", eventTarget).then(() => undefined);
   };
 
-  const flushToolCallBuffer = (): void => {
+  // 去掉每片段首尾的空白（含换行），并把片段内部连续多个换行折叠为单个换行，
+  // 避免空行累积；段内单个换行保留。段间由 join("\n") 统一分隔。
+  const cleanThinkText = (text: string): string =>
+    normalizeOutput(text).trim().replace(/\n{2,}/g, "\n");
+
+  // 工具调用的参数通常是 JSON 字符串，尝试解析并以紧凑的 key: value 列表显示；
+  // 解析失败或非对象值时，直接展示原始字符串（截断），避免转义字符导致的乱码。
+  const formatToolArgs = (args?: string): string => {
+    if (!args) {
+      return "";
+    }
+    try {
+      const parsed = JSON.parse(args);
+      if (parsed === null || typeof parsed !== "object") {
+        return String(parsed);
+      }
+      const entries = Object.entries(parsed).map(([key, value]) => {
+        let str: string;
+        if (typeof value === "string") {
+          str = value;
+        } else if (Array.isArray(value)) {
+          str = `[Array: ${value.length}]`;
+        } else if (typeof value === "object" && value !== null) {
+          str = `[Object: ${Object.keys(value).length} keys]`;
+        } else {
+          str = String(value);
+        }
+        return `  ${key}: ${str.length > 80 ? str.slice(0, 80) + "..." : str}`;
+      });
+      return entries.join("\n");
+    } catch {
+      return args.length > 200 ? args.slice(0, 200) + "..." : args;
+    }
+  };
+
+  const flushToolCallBuffer = (): Promise<void> => {
     if (slot.toolCallTimer) {
       clearTimeout(slot.toolCallTimer);
       slot.toolCallTimer = null;
     }
     if (slot.toolCallBuffer.length === 0) {
-      return;
+      return Promise.resolve();
     }
-    const text = host.prefix(slot, slot.toolCallBuffer.join("\n"));
+    const lines = slot.toolCallBuffer.map((call) => {
+      const argsText = formatToolArgs(call.args);
+      return argsText
+        ? `[工具调用] ${call.name}\n参数:\n${argsText}`
+        : `[工具调用] ${call.name}`;
+    });
+    const text = host.prefix(slot, lines.join("\n\n"));
     slot.toolCallBuffer = [];
-    host.outbound.trackForwardTask(
-      host.queueMessage(host.operatorId, text, "notice", eventTarget).then(() => undefined),
-    );
+    host.daemonLog(`toolcall_flush: adapter=${slot.adapter} count=${lines.length} chars=${Array.from(text).length} preview=${truncatePreview(text, 200)}`);
+    return host.queueMessage(host.operatorId, text, "notice", eventTarget).then(() => undefined);
   };
 
   if (adapterState.pendingApprovals !== undefined) {
@@ -166,8 +213,11 @@ export function handleSlotEvent(host: SlotEventHost, slot: DaemonSlot, event: Br
 
   slot.eventForwardChain = slot.eventForwardChain
     .then(() => forwardBridgeEvent(event, {
-    stdout: (next) => {
+    stdout: async (next) => {
       slot.lastOutputAt = Date.now();
+      // 正文输出前，先发出已缓冲的思考与工具调用，保持实际发生顺序
+      await flushThinkBuffer();
+      await flushToolCallBuffer();
       if (shouldForwardBridgeEvent(slot.adapter, next.type)) {
         const text = host.prefix(slot, next.text);
         host.daemonLog(`stdout_push: adapter=${slot.adapter} chars=${Array.from(text).length} preview=${truncatePreview(text, 200)}`);
@@ -183,8 +233,11 @@ export function handleSlotEvent(host: SlotEventHost, slot: DaemonSlot, event: Br
         host.daemonLog(`stdout_skip: adapter=${slot.adapter} chars=${Array.from(next.text).length}`);
       }
     },
-    stderr: (next) => {
+    stderr: async (next) => {
       slot.lastOutputAt = Date.now();
+      // 正文输出前，先发出已缓冲的思考与工具调用，保持实际发生顺序
+      await flushThinkBuffer();
+      await flushToolCallBuffer();
       if (shouldForwardBridgeEvent(slot.adapter, next.type)) {
         const text = host.prefix(slot, next.text);
         host.daemonLog(`stderr_push: adapter=${slot.adapter} chars=${Array.from(text).length} preview=${truncatePreview(text, 200)}`);
@@ -200,46 +253,34 @@ export function handleSlotEvent(host: SlotEventHost, slot: DaemonSlot, event: Br
         host.daemonLog(`stderr_skip: adapter=${slot.adapter} chars=${Array.from(next.text).length}`);
       }
     },
-    think: (next) => {
+    think: async (next) => {
       slot.lastOutputAt = Date.now();
-      const text = host.prefix(slot, `[思考] ${next.text}`);
-      if (slot.showFullThink) {
-        host.daemonLog(`think_push: adapter=${slot.adapter} full=true chars=${Array.from(text).length}`);
-        host.outbound.trackForwardTask(
-          host.queueMessage(host.operatorId, text, "notice", eventTarget).then(() => undefined),
-        );
-        return;
+      // 前面有工具调用缓冲时先发出，保持实际发生顺序
+      await flushToolCallBuffer();
+      const cleaned = cleanThinkText(next.text);
+      // 默认模式：缓冲到 5秒后拼接成一条 QQ 消息发送
+      slot.thinkBuffer.push(cleaned);
+      if (!slot.thinkTimer) {
+        slot.thinkTimer = setTimeout(() => {
+          flushThinkBuffer();
+        }, 5000);
+        slot.thinkTimer.unref?.();
       }
-      slot.thinkBuffer.push(next.text);
-      if (slot.thinkTimer) {
-        clearTimeout(slot.thinkTimer);
-      }
-      slot.thinkTimer = setTimeout(() => {
-        flushThinkBuffer();
-      }, 5000);
-      slot.thinkTimer.unref?.();
-      host.daemonLog(`think_buffered: adapter=${slot.adapter} buffer_len=${slot.thinkBuffer.length}`);
+      host.daemonLog(`think_buffered: adapter=${slot.adapter} raw_chars=${Array.from(next.text).length} cleaned_chars=${Array.from(cleaned).length} buffer_len=${slot.thinkBuffer.length}`);
     },
-    toolCall: (next) => {
+    toolCall: async (next) => {
       slot.lastOutputAt = Date.now();
-      const argsPreview = next.args ? ` args=${truncatePreview(next.args, 200)}` : "";
-      const text = host.prefix(slot, `[工具调用] ${next.name}${argsPreview}`);
-      if (slot.showFullThink) {
-        host.daemonLog(`tool_call_push: adapter=${slot.adapter} full=true name=${next.name}`);
-        host.outbound.trackForwardTask(
-          host.queueMessage(host.operatorId, text, "notice", eventTarget).then(() => undefined),
-        );
-        return;
-      }
-      slot.toolCallBuffer.push(next.name);
-      if (slot.toolCallTimer) {
-        clearTimeout(slot.toolCallTimer);
-      }
-      slot.toolCallTimer = setTimeout(() => {
-        flushToolCallBuffer();
-      }, 5000);
-      slot.toolCallTimer.unref?.();
-      host.daemonLog(`tool_call_buffered: adapter=${slot.adapter} buffer_len=${slot.toolCallBuffer.length}`);
+      // 前面有思考缓冲时先发出，保持实际发生顺序
+      await flushThinkBuffer();
+      const argsText = formatToolArgs(next.args);
+      const text = host.prefix(
+        slot,
+        argsText ? `[工具调用] ${next.name}\n参数:\n${argsText}` : `[工具调用] ${next.name}`,
+      );
+      host.daemonLog(`tool_call_push: adapter=${slot.adapter} name=${next.name} args_chars=${Array.from(next.args ?? "").length}`);
+      host.outbound.trackForwardTask(
+        host.queueMessage(host.operatorId, text, "notice", eventTarget).then(() => undefined),
+      );
     },
     finalReply: (next) => {
       host.typing.stop(slot, "final_reply");
@@ -249,14 +290,18 @@ export function handleSlotEvent(host: SlotEventHost, slot: DaemonSlot, event: Br
       slot.autoApprovals = {};
       const text = autoSummary ? appendBeforeAttachmentBlock(next.text, autoSummary) : next.text;
       host.daemonLog(`final_reply_send: adapter=${slot.adapter} chars=${Array.from(text).length} preview=${truncatePreview(text, 200)}`);
-      host.outbound.trackForwardTask(slot.outputBatcher.flushNow().then(async () => {
-        await channelPort.send({
-          target: eventTarget,
-          kind: "final_reply",
-          text,
-          adapter: slot.adapter,
-        });
-      }));
+      host.outbound.trackForwardTask(
+        flushThinkBuffer().then(() => flushToolCallBuffer()).then(() =>
+          slot.outputBatcher.flushNow().then(async () => {
+            await channelPort.send({
+              target: eventTarget,
+              kind: "final_reply",
+              text,
+              adapter: slot.adapter,
+            });
+          })
+        ),
+      );
     },
     status: (next) => {
       if (next.message) {
@@ -352,32 +397,34 @@ export function handleSlotEvent(host: SlotEventHost, slot: DaemonSlot, event: Br
     },
     taskComplete: () => {
       host.typing.stop(slot, "task_complete");
-      flushThinkBuffer();
-      flushToolCallBuffer();
-      host.outbound.trackForwardTask(slot.outputBatcher.flushNow().then(() => {
-        slot.pendingConfirmations = [];
-        slot.autoApprovals = {};
-        slot.pendingUserInput = null;
-        if (eventTask) {
-          slot.turns.complete(eventTask);
-        }
-        void host.maybeDrainDeferredInputs(slot);
-      }));
+      host.outbound.trackForwardTask(
+        flushThinkBuffer().then(() => flushToolCallBuffer()).then(() => {
+          slot.pendingConfirmations = [];
+          slot.autoApprovals = {};
+          slot.pendingUserInput = null;
+          if (eventTask) {
+            slot.turns.complete(eventTask);
+          }
+          void host.maybeDrainDeferredInputs(slot);
+        }),
+      );
     },
     taskFailed: (next) => {
       host.typing.stop(slot, "task_failed");
-      flushThinkBuffer();
-      flushToolCallBuffer();
-      host.outbound.trackForwardTask(slot.outputBatcher.flushNow().then(async () => {
-        slot.pendingConfirmations = [];
-        slot.autoApprovals = {};
-        slot.pendingUserInput = null;
-        if (eventTask) {
-          slot.turns.complete(eventTask);
-        }
-        void host.maybeDrainDeferredInputs(slot);
-        await host.queueMessage(host.operatorId, host.prefix(slot, formatTaskFailedMessage(slot.adapter, next.message)), "task_failed", eventTarget);
-      }));
+      host.outbound.trackForwardTask(
+        flushThinkBuffer().then(() => flushToolCallBuffer()).then(() =>
+          slot.outputBatcher.flushNow().then(async () => {
+            slot.pendingConfirmations = [];
+            slot.autoApprovals = {};
+            slot.pendingUserInput = null;
+            if (eventTask) {
+              slot.turns.complete(eventTask);
+            }
+            void host.maybeDrainDeferredInputs(slot);
+            await host.queueMessage(host.operatorId, host.prefix(slot, formatTaskFailedMessage(slot.adapter, next.message)), "task_failed", eventTarget);
+          })
+        ),
+      );
     },
     fatalError: (next) => {
       host.typing.stop(slot, "fatal_error");
