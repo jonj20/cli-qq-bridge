@@ -138,13 +138,27 @@ export function handleSlotEvent(host: SlotEventHost, slot: DaemonSlot, event: Br
     stdout: (next) => {
       slot.lastOutputAt = Date.now();
       if (shouldForwardBridgeEvent(slot.adapter, next.type)) {
-        slot.outputBatcher.push(next.text);
+        host.outbound.trackForwardTask(
+          host.queueMessage(
+            host.operatorId,
+            host.prefix(slot, next.text),
+            "message",
+            eventTarget,
+          ).then(() => undefined),
+        );
       }
     },
     stderr: (next) => {
       slot.lastOutputAt = Date.now();
       if (shouldForwardBridgeEvent(slot.adapter, next.type)) {
-        slot.outputBatcher.push(next.text);
+        host.outbound.trackForwardTask(
+          host.queueMessage(
+            host.operatorId,
+            host.prefix(slot, next.text),
+            "message",
+            eventTarget,
+          ).then(() => undefined),
+        );
       }
     },
     finalReply: (next) => {
