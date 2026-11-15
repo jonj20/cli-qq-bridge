@@ -12,6 +12,7 @@ export type BridgeControlCommand =
   | { type: "stop" }
   | { type: "reset" }
   | { type: "auto"; enabled?: boolean; invalid?: boolean }
+  | { type: "think"; enabled?: boolean; invalid?: boolean }
   | { type: "confirm"; index?: number }
   | { type: "always"; index?: number }
   | { type: "deny"; index?: number; reason?: string }
@@ -74,6 +75,13 @@ export function parseBridgeControlCommand(
       if (["on", "开", "开启"].includes(value)) return { type: "auto", enabled: true };
       if (["off", "关", "关闭"].includes(value)) return { type: "auto", enabled: false };
       return { type: "auto", invalid: true };
+    }
+    case "/think": {
+      const value = argument.toLowerCase();
+      if (!value) return { type: "think" };
+      if (["on", "开", "开启"].includes(value)) return { type: "think", enabled: true };
+      if (["off", "关", "关闭"].includes(value)) return { type: "think", enabled: false };
+      return { type: "think", invalid: true };
     }
     case "/confirm":
     case "/yes":

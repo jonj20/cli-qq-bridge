@@ -65,6 +65,8 @@ export type DaemonSlot = {
   turns: TurnCoordinator<ActiveTask>;
   lastOutputAt: number;
   lastFinalReplyAtMs: number;
+  /** 开关：开启后 think/tool_call 事件会推送全文，否则只推送简短提示。 */
+  showFullThink: boolean;
   eventForwardChain: Promise<void>;
   deferredInputs: DeferredDaemonInput[];
   drainingDeferredInputs: boolean;

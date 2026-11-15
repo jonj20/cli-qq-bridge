@@ -671,6 +671,7 @@ export class SlotManager {
       }),
       lastOutputAt: 0,
       lastFinalReplyAtMs: 0,
+      showFullThink: false,
       eventForwardChain: Promise.resolve(),
       deferredInputs: [],
       drainingDeferredInputs: false,

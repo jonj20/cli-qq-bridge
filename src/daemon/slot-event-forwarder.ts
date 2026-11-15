@@ -171,8 +171,9 @@ export function handleSlotEvent(host: SlotEventHost, slot: DaemonSlot, event: Br
     },
     think: (next) => {
       slot.lastOutputAt = Date.now();
-      const text = host.prefix(slot, `[思考] ${next.text}`);
-      host.daemonLog(`think_push: adapter=${slot.adapter} chars=${Array.from(text).length} preview=${truncatePreview(text, 200)}`);
+      const fullText = host.prefix(slot, `[思考] ${next.text}`);
+      const text = slot.showFullThink ? fullText : host.prefix(slot, "[思考中...]");
+      host.daemonLog(`think_push: adapter=${slot.adapter} full=${slot.showFullThink} chars=${Array.from(text).length}`);
       host.outbound.trackForwardTask(
         host.queueMessage(
           host.operatorId,
@@ -185,8 +186,9 @@ export function handleSlotEvent(host: SlotEventHost, slot: DaemonSlot, event: Br
     toolCall: (next) => {
       slot.lastOutputAt = Date.now();
       const argsPreview = next.args ? ` args=${truncatePreview(next.args, 200)}` : "";
-      const text = host.prefix(slot, `[工具调用] ${next.name}${argsPreview}`);
-      host.daemonLog(`tool_call_push: adapter=${slot.adapter} name=${next.name} args_len=${next.args ? Array.from(next.args).length : 0}`);
+      const fullText = host.prefix(slot, `[工具调用] ${next.name}${argsPreview}`);
+      const text = slot.showFullThink ? fullText : host.prefix(slot, "[工具调用中...]");
+      host.daemonLog(`tool_call_push: adapter=${slot.adapter} full=${slot.showFullThink} name=${next.name}`);
       host.outbound.trackForwardTask(
         host.queueMessage(
           host.operatorId,

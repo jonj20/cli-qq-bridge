@@ -126,6 +126,9 @@ export class DaemonControlCommands {
       case "auto":
         await this.handleAutoApprovalCommand(message.senderId, command);
         return;
+      case "think":
+        await this.handleThinkCommand(message.senderId, command);
+        return;
       case "confirm":
         await this.confirmPendingApproval(message, activeSlot, command.index);
         return;
@@ -370,6 +373,37 @@ export class DaemonControlCommands {
       senderId,
       t(command.enabled ? "approval.auto.enabled" : "approval.auto.disabled")
         + (needsRestart ? `\n${t("approval.auto.companionRestart")}` : ""),
+    );
+  }
+
+  /** `/think on|off` 开关是否推送 think/tool_call 全文到远程通道。 */
+  private async handleThinkCommand(
+    senderId: string,
+    command: { enabled?: boolean; invalid?: boolean },
+  ): Promise<void> {
+    if (command.invalid) {
+      await this.host.queueMessage(senderId, t("bridge.think.usage"));
+      return;
+    }
+    if (command.enabled === undefined) {
+      const slot = this.host.slotManager.getActiveSlot();
+      const enabled = slot?.showFullThink ?? false;
+      await this.host.queueMessage(
+        senderId,
+        t(enabled ? "bridge.think.statusOn" : "bridge.think.statusOff"),
+      );
+      return;
+    }
+    const slot = this.host.slotManager.getActiveSlot();
+    if (!slot) {
+      await this.host.queueMessage(senderId, formatNoActiveAdapterMessage());
+      return;
+    }
+    slot.showFullThink = command.enabled;
+    this.host.daemonLog(`think_full: enabled=${command.enabled} adapter=${slot.adapter}`);
+    await this.host.queueMessage(
+      senderId,
+      t(command.enabled ? "bridge.think.enabled" : "bridge.think.disabled"),
     );
   }
 
